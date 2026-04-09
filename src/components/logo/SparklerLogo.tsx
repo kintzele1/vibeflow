@@ -280,7 +280,7 @@ export function VibeFlowWordmark({
         <div
           style={{
             fontFamily: "var(--font-syne)",
-            fontWeight: 800,
+            fontWeight: 700,
             fontSize: s.wordmark,
             letterSpacing: "-0.02em",
             color: textColor,

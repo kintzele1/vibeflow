@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+/* ─── VibeFlow Design Tokens ─────────────────────────── */
+:root {
+  /* Brand Colors */
+  --teal:          #05AD98;
+  --teal-light:    #E6FAF8;
+  --teal-dark:     #038C7A;
+  --lavender:      #BBBBFB;
+  --lavender-light:#EEEEFF;
+  --lavender-dark: #9898E8;
+
+  /* Neutrals */
+  --dark:          #1F1F1F;
+  --gray:          #878787;
+  --gray-light:    #EEEEEE;
+  --white:         #FFFFFF;
+  --bg:            #F8F8F8;
+  --bg-card:       #FFFFFF;
+
+  /* Typography */
+  --font-display:  var(--font-syne);
+  --font-body:     var(--font-dm-sans);
+
+  /* Spacing scale */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  32px;
+  --space-xl:  64px;
+  --space-2xl: 96px;
+
+  /* Radius */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+  --radius-full:9999px;
+}
+
+/* ─── Base Reset ─────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--white);
+  color: var(--dark);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ─── Typography ─────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--dark);
+}
+
+/* Wordmark treatment */
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.wordmark .flow {
+  color: var(--teal);
+}
+.wordmark .sub {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 0.45em;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--gray);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ─── Utility Classes ────────────────────────────────── */
+.teal       { color: var(--teal); }
+.gray       { color: var(--gray); }
+.bg-teal-light { background-color: var(--teal-light); }
+.bg-lv-light   { background-color: var(--lavender-light); }
+
+/* ─── Button Base ────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 15px;
+  border-radius: var(--radius-full);
+  padding: 12px 28px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  border: none;
+  text-decoration: none;
+}
+.btn-primary {
+  background: var(--teal);
+  color: var(--white);
+}
+.btn-primary:hover {
+  background: var(--teal-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(5, 173, 152, 0.28);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--teal);
+  border: 1.5px solid var(--teal);
+}
+.btn-outline:hover {
+  background: var(--teal-light);
+}
+
+/* ─── Card Base ──────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--gray-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+/* ─── Section Spacing ────────────────────────────────── */
+.section {
+  padding: var(--space-2xl) var(--space-lg);
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* ─── Focus Ring ─────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+  border-radius: 4px;
+}

@@ -1,0 +1,49 @@
+import type { Metadata } from "next";
+import { Syne, DM_Sans } from "next/font/google";
+import "./globals.css";
+
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["400", "700", "800"],
+  variable: "--font-syne",
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  variable: "--font-dm-sans",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "VibeFlow Marketing — One prompt. Full campaign. Perfectly on-brand.",
+  description:
+    "AI-powered marketing kit for vibe coders and indie hackers. Describe your app once — get a complete, coordinated campaign across every channel.",
+  keywords: ["marketing", "AI", "indie hacker", "vibe coding", "campaign generator"],
+  openGraph: {
+    title: "VibeFlow Marketing",
+    description: "One prompt. Full campaign. Perfectly on-brand.",
+    type: "website",
+    // Add your domain here once live:
+    // url: "https://vibeflow.marketing",
+    // images: ["/og-image.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "VibeFlow Marketing",
+    description: "One prompt. Full campaign. Perfectly on-brand.",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className={`${syne.variable} ${dmSans.variable}`}>
+      <body className="antialiased">{children}</body>
+    </html>
+  );
+}

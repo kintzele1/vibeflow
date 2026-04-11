@@ -5,12 +5,13 @@ import { createClient } from "@/lib/supabase/client";
 import { VibeFlowWordmark } from "@/components/logo/SparklerLogo";
 
 const TABS = [
-  { label: "Vibe Launchpad", href: "/dashboard",              icon: "⚡" },
-  { label: "My Campaigns",   href: "/dashboard/campaigns",    icon: "📁" },
-  { label: "Agents",         href: "/dashboard/agents",       icon: "🤖" },
-  { label: "Integrations",   href: "/dashboard/integrations", icon: "🔗" },
-  { label: "Analytics Hub",  href: "/dashboard/analytics",    icon: "📊" },
-  { label: "Usage & Billing",href: "/dashboard/billing",      icon: "💳" },
+  { label: "Vibe Launchpad",    href: "/dashboard",                icon: "⚡" },
+  { label: "Content Marketing", href: "/dashboard/content",        icon: "✍️" },
+  { label: "My Campaigns",      href: "/dashboard/campaigns",      icon: "📁" },
+  { label: "Agents",            href: "/dashboard/agents",         icon: "🤖" },
+  { label: "Integrations",      href: "/dashboard/integrations",   icon: "🔗" },
+  { label: "Analytics Hub",     href: "/dashboard/analytics",      icon: "📊" },
+  { label: "Usage & Billing",   href: "/dashboard/billing",        icon: "💳" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -55,8 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside style={{
         width: 240, flexShrink: 0,
-        background: "#FFFFFF",
-        borderRight: "1px solid #EEEEEE",
+        background: "#FFFFFF", borderRight: "1px solid #EEEEEE",
         display: "flex", flexDirection: "column",
         padding: "24px 0",
         position: "sticky", top: 0, height: "100vh",
@@ -67,14 +67,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
+        <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4, overflowY: "auto" }}>
           {TABS.map(tab => {
             const active = isActive(tab.href);
             return (
               <a key={tab.href} href={tab.href} style={{
                 display: "flex", alignItems: "center", gap: 10,
-                padding: "10px 12px", borderRadius: 10,
-                textDecoration: "none",
+                padding: "10px 12px", borderRadius: 10, textDecoration: "none",
                 background: active ? "#E6FAF8" : "transparent",
                 border: active ? "1px solid rgba(5,173,152,0.15)" : "1px solid transparent",
                 transition: "background 0.15s",
@@ -84,7 +83,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <span style={{ fontSize: 16 }}>{tab.icon}</span>
                 <span style={{
-                  fontFamily: "var(--font-dm-sans)", fontSize: 14, fontWeight: active ? 500 : 400,
+                  fontFamily: "var(--font-dm-sans)", fontSize: 14,
+                  fontWeight: active ? 500 : 400,
                   color: active ? "#05AD98" : "#555555",
                 }}>{tab.label}</span>
               </a>
@@ -92,8 +92,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* Usage meter */}
-        <div style={{ padding: "16px 16px", borderTop: "1px solid #EEEEEE" }}>
+        {/* Usage + user */}
+        <div style={{ padding: "16px", borderTop: "1px solid #EEEEEE" }}>
           {searches !== null && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
@@ -113,7 +113,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           )}
 
-          {/* User */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <div style={{
               width: 32, height: 32, borderRadius: "50%",
@@ -124,7 +123,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {user?.email?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div style={{ overflow: "hidden" }}>
-              <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#1F1F1F", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{
+                fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#1F1F1F",
+                fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              }}>
                 {user?.email}
               </div>
               <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 11, color: "#05AD98", textTransform: "capitalize" }}>
@@ -147,7 +149,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Main content */}
+      {/* Main */}
       <main style={{ flex: 1, overflow: "auto" }}>
         {children}
       </main>

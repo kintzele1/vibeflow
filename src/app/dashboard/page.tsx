@@ -1,20 +1,20 @@
 "use client";
-import { useState, useRef } from "react";
-
-const SECTIONS = [
-  "VIBE ANALYSIS", "TAGLINES", "HERO COPY", "TWITTER/X THREAD",
-  "LINKEDIN POST", "REDDIT POST", "PRODUCT HUNT",
-  "EMAIL SEQUENCE", "SEO KEYWORDS", "AD HEADLINES",
-];
+import { useState } from "react";
+import SuccessBanner from "@/components/dashboard/SuccessBanner";
 
 export default function DashboardPage() {
   const [prompt, setPrompt] = useState("");
-  const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [output, setOutput] = useState("");
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
-  const [campaignId, setCampaignId] = useState<string | null>(null);
-  const outputRef = useRef<HTMLDivElement>(null);
+  const outputRef = { current: null as HTMLDivElement | null };
+
+  const SECTIONS = [
+    "VIBE ANALYSIS", "TAGLINES", "HERO COPY", "TWITTER/X THREAD",
+    "LINKEDIN POST", "REDDIT POST", "PRODUCT HUNT",
+    "EMAIL SEQUENCE", "SEO KEYWORDS", "AD HEADLINES",
+  ];
 
   async function handleGenerate() {
     if (!prompt.trim() || loading) return;
@@ -22,7 +22,6 @@ export default function DashboardPage() {
     setDone(false);
     setOutput("");
     setError("");
-    setCampaignId(null);
 
     try {
       const response = await fetch("/api/campaign", {
@@ -51,30 +50,16 @@ export default function DashboardPage() {
       while (true) {
         const { done: streamDone, value } = await reader.read();
         if (streamDone) break;
-
         const lines = decoder.decode(value).split("\n\n");
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           try {
             const data = JSON.parse(line.slice(6));
             if (data.text) {
-              setOutput(prev => {
-                const next = prev + data.text;
-                setTimeout(() => {
-                  if (outputRef.current) {
-                    outputRef.current.scrollTop = outputRef.current.scrollHeight;
-                  }
-                }, 10);
-                return next;
-              });
+              setOutput(prev => prev + data.text);
             }
-            if (data.done) {
-              setDone(true);
-              setCampaignId(data.campaignId ?? null);
-            }
-            if (data.error) {
-              setError(data.error);
-            }
+            if (data.done) setDone(true);
+            if (data.error) setError(data.error);
           } catch {}
         }
       }
@@ -97,8 +82,8 @@ export default function DashboardPage() {
 
   return (
     <div style={{ padding: "40px 48px", maxWidth: 900, margin: "0 auto" }}>
+      <SuccessBanner />
 
-      {/* Header */}
       <div style={{ marginBottom: 32 }}>
         <h1 style={{
           fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 32,
@@ -111,21 +96,16 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Prompt box */}
       {!loading && !output && (
         <div style={{
-          background: "#FFFFFF", borderRadius: 20,
-          border: "1.5px solid #EEEEEE",
-          boxShadow: "0 4px 24px rgba(5,173,152,0.06)",
-          padding: "28px 32px", marginBottom: 24,
+          background: "#FFFFFF", borderRadius: 20, border: "1.5px solid #EEEEEE",
+          boxShadow: "0 4px 24px rgba(5,173,152,0.06)", padding: "28px 32px", marginBottom: 24,
         }}>
           <label style={{
             fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
             color: "#AAAAAA", letterSpacing: "0.08em", textTransform: "uppercase",
             display: "block", marginBottom: 12,
-          }}>
-            Describe your app
-          </label>
+          }}>Describe your app</label>
           <textarea
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
@@ -148,12 +128,10 @@ export default function DashboardPage() {
               onClick={handleGenerate}
               disabled={!prompt.trim()}
               style={{
-                background: !prompt.trim() ? "#CCCCCC" : "#05AD98",
-                color: "#FFFFFF",
+                background: !prompt.trim() ? "#CCCCCC" : "#05AD98", color: "#FFFFFF",
                 fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 15,
                 padding: "12px 28px", borderRadius: 999, border: "none",
                 cursor: !prompt.trim() ? "not-allowed" : "pointer",
-                transition: "background 0.15s",
               }}
             >
               Generate Full Campaign →
@@ -162,7 +140,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div style={{
           background: "#FEF2F2", border: "1px solid rgba(226,75,74,0.2)",
@@ -171,14 +148,14 @@ export default function DashboardPage() {
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <span>{error}</span>
-          <button onClick={() => { setError(""); setOutput(""); setLoading(false); }}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#E24B4A", fontSize: 18 }}>
-            ×
-          </button>
+          {error.includes("searches") && (
+            <a href="/dashboard/billing" style={{ color: "#05AD98", fontWeight: 500, marginLeft: 12 }}>
+              Upgrade →
+            </a>
+          )}
         </div>
       )}
 
-      {/* Loading */}
       {loading && !output && (
         <div style={{
           background: "#FFFFFF", borderRadius: 20, border: "1.5px solid #EEEEEE",
@@ -187,9 +164,7 @@ export default function DashboardPage() {
           <div style={{
             width: 44, height: 44, borderRadius: "50%",
             border: "3px solid #E6FAF8", borderTop: "3px solid #05AD98",
-            margin: "0 auto 20px",
-            animation: "spin 0.8s linear infinite",
-            display: "inline-block",
+            margin: "0 auto 20px", animation: "spin 0.8s linear infinite", display: "inline-block",
           }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           <p style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 18, color: "#1F1F1F", marginBottom: 8 }}>
@@ -201,10 +176,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Output */}
       {output && (
         <div>
-          {/* Section progress */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
             {SECTIONS.map(s => (
               <span key={s} style={{
@@ -212,50 +185,38 @@ export default function DashboardPage() {
                 padding: "3px 10px", borderRadius: 999,
                 background: output.includes(s) ? "#E6FAF8" : "#F0F0F0",
                 color: output.includes(s) ? "#05AD98" : "#AAAAAA",
-                transition: "all 0.3s",
               }}>{s}</span>
             ))}
           </div>
 
-          {/* Output box */}
-          <div ref={outputRef} style={{
-            background: "#FFFFFF", borderRadius: 20,
-            border: "1.5px solid #EEEEEE",
+          <div style={{
+            background: "#FFFFFF", borderRadius: 20, border: "1.5px solid #EEEEEE",
             padding: "32px", maxHeight: 560, overflowY: "auto",
             fontFamily: "var(--font-dm-sans)", fontSize: 15,
             color: "#333333", lineHeight: 1.8, whiteSpace: "pre-wrap",
-            boxShadow: "0 4px 24px rgba(5,173,152,0.06)",
           }}>
             {output}
             {loading && <span style={{ color: "#05AD98" }}>▌</span>}
           </div>
 
-          {/* Actions */}
           {done && (
             <div style={{ display: "flex", gap: 12, marginTop: 20, flexWrap: "wrap" }}>
               <button onClick={handleExport} style={{
                 background: "#05AD98", color: "#FFFFFF",
                 fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
                 padding: "10px 24px", borderRadius: 999, border: "none", cursor: "pointer",
-              }}>
-                Export as Markdown ↓
-              </button>
+              }}>Export as Markdown ↓</button>
               <a href="/dashboard/campaigns" style={{
                 background: "#F8F8F8", color: "#1F1F1F",
                 fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
                 padding: "10px 24px", borderRadius: 999, textDecoration: "none",
                 border: "1px solid #EEEEEE", display: "inline-block",
-              }}>
-                View in Campaigns →
-              </a>
-              <button onClick={() => { setOutput(""); setDone(false); setPrompt(""); setCampaignId(null); }} style={{
+              }}>View in Campaigns →</a>
+              <button onClick={() => { setOutput(""); setDone(false); setPrompt(""); }} style={{
                 background: "transparent", color: "#878787",
                 fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
-                padding: "10px 24px", borderRadius: 999,
-                border: "1px solid #EEEEEE", cursor: "pointer",
-              }}>
-                New campaign
-              </button>
+                padding: "10px 24px", borderRadius: 999, border: "1px solid #EEEEEE", cursor: "pointer",
+              }}>New campaign</button>
             </div>
           )}
         </div>

@@ -5,6 +5,7 @@ import { PLANS } from "@/lib/constants";
 
 export default function BillingPage() {
   const [usage, setUsage] = useState<any>(null);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -15,9 +16,25 @@ export default function BillingPage() {
     });
   }, []);
 
+  async function handleCheckout(plan: "launch" | "annual") {
+    setLoadingPlan(plan);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      setLoadingPlan(null);
+    }
+  }
+
   const plan = usage?.plan === "annual" ? PLANS.annual : PLANS.launch;
   const searchesUsed = (plan.searches - (usage?.searches_remaining ?? plan.searches));
   const pct = Math.min((searchesUsed / plan.searches) * 100, 100);
+  const hasActivePlan = usage && usage.plan !== "free" && usage.searches_remaining > 0;
 
   return (
     <div style={{ padding: "40px 48px", maxWidth: 720 }}>
@@ -40,13 +57,15 @@ export default function BillingPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
           <div>
             <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 20, color: "#1F1F1F", marginBottom: 4 }}>
-              {usage ? plan.name : "No active plan"}
+              {hasActivePlan ? plan.name : "No active plan"}
             </div>
             <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#878787" }}>
-              {usage ? `${plan.searches.toLocaleString()} searches · ${plan.period}` : "Purchase a plan to get started"}
+              {hasActivePlan
+                ? `${plan.searches.toLocaleString()} searches · ${plan.period}`
+                : "Purchase a plan to start generating campaigns"}
             </div>
           </div>
-          {usage && (
+          {hasActivePlan && (
             <div style={{
               background: "#E6FAF8", color: "#05AD98",
               fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
@@ -56,43 +75,54 @@ export default function BillingPage() {
         </div>
 
         {/* Usage bar */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-            <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787" }}>Searches used</span>
-            <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, fontWeight: 500, color: "#1F1F1F" }}>
-              {searchesUsed} / {plan.searches}
-            </span>
+        {hasActivePlan && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787" }}>Searches used</span>
+              <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, fontWeight: 500, color: "#1F1F1F" }}>
+                {searchesUsed} / {plan.searches}
+              </span>
+            </div>
+            <div style={{ height: 8, background: "#EEEEEE", borderRadius: 999, overflow: "hidden" }}>
+              <div style={{
+                height: "100%", borderRadius: 999,
+                background: pct > 90 ? "#E24B4A" : "#05AD98",
+                width: `${pct}%`, transition: "width 0.5s ease",
+              }} />
+            </div>
+            <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#AAAAAA", marginTop: 6 }}>
+              {usage?.searches_remaining ?? 0} searches remaining · Overage: ${plan.overage}/search
+            </div>
           </div>
-          <div style={{ height: 8, background: "#EEEEEE", borderRadius: 999, overflow: "hidden" }}>
-            <div style={{
-              height: "100%", borderRadius: 999,
-              background: pct > 90 ? "#E24B4A" : "#05AD98",
-              width: `${pct}%`, transition: "width 0.5s ease",
-            }} />
-          </div>
-          <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#AAAAAA", marginTop: 6 }}>
-            {usage?.searches_remaining ?? plan.searches} searches remaining · Overage: ${plan.overage}/search
-          </div>
-        </div>
+        )}
 
-        <div style={{ display: "flex", gap: 12 }}>
-          <a href="/api/stripe-portal" style={{
-            background: "#05AD98", color: "#FFFFFF",
-            fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
-            padding: "10px 24px", borderRadius: 999, textDecoration: "none",
-            display: "inline-block",
-          }}>
-            Manage subscription →
-          </a>
-          {!usage && (
-            <a href="/#pricing" style={{
-              background: "#1F1F1F", color: "#FFFFFF",
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {hasActivePlan ? (
+            <a href="/api/stripe-portal" style={{
+              background: "#05AD98", color: "#FFFFFF",
               fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
               padding: "10px 24px", borderRadius: 999, textDecoration: "none",
               display: "inline-block",
             }}>
-              Get a plan →
+              Manage subscription →
             </a>
+          ) : (
+            <>
+              <button onClick={() => handleCheckout("launch")} disabled={!!loadingPlan} style={{
+                background: "#1F1F1F", color: "#FFFFFF",
+                fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
+                padding: "10px 24px", borderRadius: 999, border: "none", cursor: "pointer",
+              }}>
+                {loadingPlan === "launch" ? "Redirecting..." : "Get Launch Kit — $49.99"}
+              </button>
+              <button onClick={() => handleCheckout("annual")} disabled={!!loadingPlan} style={{
+                background: "#05AD98", color: "#FFFFFF",
+                fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
+                padding: "10px 24px", borderRadius: 999, border: "none", cursor: "pointer",
+              }}>
+                {loadingPlan === "annual" ? "Redirecting..." : "Get Annual Plan — $99.99"}
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -109,7 +139,6 @@ export default function BillingPage() {
           When you run out of searches, you can keep going. Overages are billed at{" "}
           <strong style={{ color: "#1F1F1F" }}>${PLANS.launch.overage}/search</strong> (Launch Kit) or{" "}
           <strong style={{ color: "#1F1F1F" }}>${PLANS.annual.overage}/search</strong> (Annual Plan).
-          You can upgrade anytime to get more searches at a lower rate.
         </p>
       </div>
     </div>

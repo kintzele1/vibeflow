@@ -1,7 +1,31 @@
 "use client";
+import { useState } from "react";
 import { PLANS } from "@/lib/constants";
 
 export function Pricing() {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  async function handleCheckout(plan: "launch" | "annual") {
+    setLoadingPlan(plan);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Something went wrong. Please try again.");
+        setLoadingPlan(null);
+      }
+    } catch {
+      alert("Something went wrong. Please try again.");
+      setLoadingPlan(null);
+    }
+  }
+
   return (
     <section id="pricing" style={{ padding: "100px 24px", background: "#FFFFFF" }}>
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
@@ -33,8 +57,7 @@ export function Pricing() {
           {/* Launch Kit */}
           <div style={{
             border: "1.5px solid #EEEEEE", borderRadius: 24, padding: "40px 36px",
-            background: "#F8F8F8",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.05)",
+            background: "#F8F8F8", boxShadow: "0 4px 24px rgba(0,0,0,0.05)",
           }}>
             <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 22, color: "#1F1F1F", marginBottom: 6 }}>
               {PLANS.launch.name}
@@ -69,22 +92,24 @@ export function Pricing() {
               ))}
             </ul>
 
-            <a href="/api/checkout?plan=launch"
+            <button
+              onClick={() => handleCheckout("launch")}
+              disabled={!!loadingPlan}
               style={{
-                display: "block", textAlign: "center",
-                background: "#1F1F1F", color: "#FFFFFF",
+                display: "block", width: "100%", textAlign: "center",
+                background: loadingPlan === "launch" ? "#AAAAAA" : "#1F1F1F",
+                color: "#FFFFFF",
                 fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 16,
-                padding: "14px 28px", borderRadius: 999, textDecoration: "none",
-                transition: "background 0.15s, transform 0.15s",
+                padding: "14px 28px", borderRadius: 999, border: "none",
+                cursor: loadingPlan ? "not-allowed" : "pointer",
+                transition: "background 0.15s",
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#333"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "#1F1F1F"; e.currentTarget.style.transform = "translateY(0)"; }}
             >
-              Get Launch Kit — {PLANS.launch.priceDisplay}
-            </a>
+              {loadingPlan === "launch" ? "Redirecting..." : `Get Launch Kit — ${PLANS.launch.priceDisplay}`}
+            </button>
           </div>
 
-          {/* Annual — featured */}
+          {/* Annual */}
           <div style={{
             border: "2px solid #05AD98", borderRadius: 24, padding: "40px 36px",
             background: "#FFFFFF", position: "relative",
@@ -131,19 +156,21 @@ export function Pricing() {
               ))}
             </ul>
 
-            <a href="/api/checkout?plan=annual"
+            <button
+              onClick={() => handleCheckout("annual")}
+              disabled={!!loadingPlan}
               style={{
-                display: "block", textAlign: "center",
-                background: "#05AD98", color: "#FFFFFF",
+                display: "block", width: "100%", textAlign: "center",
+                background: loadingPlan === "annual" ? "#AAAAAA" : "#05AD98",
+                color: "#FFFFFF",
                 fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 16,
-                padding: "14px 28px", borderRadius: 999, textDecoration: "none",
-                transition: "background 0.15s, transform 0.15s",
+                padding: "14px 28px", borderRadius: 999, border: "none",
+                cursor: loadingPlan ? "not-allowed" : "pointer",
+                transition: "background 0.15s",
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#038C7A"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "#05AD98"; e.currentTarget.style.transform = "translateY(0)"; }}
             >
-              Get Annual Plan — {PLANS.annual.priceDisplay}
-            </a>
+              {loadingPlan === "annual" ? "Redirecting..." : `Get Annual Plan — ${PLANS.annual.priceDisplay}`}
+            </button>
           </div>
         </div>
 

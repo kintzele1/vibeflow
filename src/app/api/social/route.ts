@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const SOCIAL_TYPES = {
   x_post: {
-    label: "X (Twitter) Post",
+    label: "X Posts",
     prompt: (app: string) => `Write 3 different standalone X (Twitter) posts for this app: ${app}
 
 Each post should:
@@ -18,130 +18,67 @@ Label each as POST 1, POST 2, POST 3.`,
     label: "LinkedIn Posts",
     prompt: (app: string) => `Write 3 LinkedIn posts for this app: ${app}
 
-POST 1 — Founder story angle:
-Tell the personal story of why you built this. Vulnerable, real, relatable.
+POST 1 — Founder story angle
+POST 2 — Problem/solution angle  
+POST 3 — Results/value angle
 
-POST 2 — Problem/solution angle:
-Start with a pain point your audience recognizes. Build to the solution.
-
-POST 3 — Results/value angle:
-Lead with a specific outcome or benefit. Use numbers if possible.
-
-Each post:
-- First line must stop the scroll (shown before "see more")
-- 150-250 words
-- Line breaks for readability
-- End with a question or CTA
-
-Label each clearly.`,
+Each post: first line must stop the scroll, 150-250 words, end with CTA.`,
   },
   instagram: {
-    label: "Instagram Caption",
+    label: "Instagram Captions",
     prompt: (app: string) => `Write 3 Instagram captions for this app: ${app}
 
-CAPTION 1 — Launch announcement:
-Exciting, visual, story-driven. Describe what someone would see/feel using this.
+CAPTION 1 — Launch announcement
+CAPTION 2 — Behind the scenes
+CAPTION 3 — User benefit
 
-CAPTION 2 — Behind the scenes:
-How was it built? What was the hardest part? People love the process.
-
-CAPTION 3 — User benefit:
-Paint a picture of life before vs after using this app.
-
-For each caption include:
-- Main caption text (under 150 words)
-- 15-20 relevant hashtags grouped at the end
-- Suggested emoji placement
-
-Label each clearly.`,
+Each: main caption text + 15-20 hashtags + emoji suggestions.`,
   },
   tiktok: {
-    label: "TikTok Script",
+    label: "TikTok Scripts",
     prompt: (app: string) => `Write 3 TikTok video scripts for this app: ${app}
 
-SCRIPT 1 — "POV" format (15-30 seconds):
-"POV: You just launched your app and..." Show the transformation.
+SCRIPT 1 — POV format (15-30 seconds)
+SCRIPT 2 — Tutorial/demo format (30-60 seconds)
+SCRIPT 3 — Storytime format (30-60 seconds)
 
-SCRIPT 2 — Tutorial/demo format (30-60 seconds):
-Walk through the app in a fast, engaging way. Hook in first 2 seconds.
-
-SCRIPT 3 — Storytime format (30-60 seconds):
-"I built an app in 2 weeks and here's what happened..." Real founder story.
-
-For each script:
-- [HOOK]: First line spoken (must stop the scroll)
-- [VISUAL]: What's shown on screen
-- [VOICEOVER/TEXT]: What's said/shown as text
-- [CTA]: End call to action
-- Suggested trending sounds/music style
-
-Label each clearly.`,
+For each: [HOOK], [VISUAL], [VOICEOVER], [CTA], suggested music style.`,
   },
   reddit_posts: {
     label: "Reddit Posts",
     prompt: (app: string) => `Write 3 Reddit posts for this app: ${app}
 
-POST 1 — r/SideProject:
-Title: "Built X in Y weeks — here's what I learned"
-Body: Honest builder story. What worked, what didn't, what you'd do differently.
+POST 1 — r/SideProject: Builder story
+POST 2 — r/IndieHackers: Show HN style
+POST 3 — Niche subreddit: Value-first, app mentioned naturally
 
-POST 2 — r/IndieHackers:
-Title: "Show HN style — I made X because Y kept happening to me"
-Body: Personal pain point → solution → current traction/status.
-
-POST 3 — r/startups or niche subreddit:
-Title: More value-focused — "How I automated X using AI"
-Body: Teach something useful, then mention your app naturally at the end.
-
-Reddit rules: No hype, no buzzwords, be genuinely helpful. Sound like a real person.
-
-Label each clearly with the subreddit and title.`,
+No hype, no buzzwords, sound like a real person.`,
   },
   threads: {
     label: "Threads Posts",
     prompt: (app: string) => `Write 5 Threads posts for this app: ${app}
 
-Threads is conversational, casual, and text-first. Think short observations, hot takes, and relatable moments.
+POST 1 — Hot take about the problem
+POST 2 — Behind the scenes of building
+POST 3 — Relatable moment for target user
+POST 4 — Plain English explanation
+POST 5 — Engagement question
 
-POST 1 — Hot take about the problem your app solves
-POST 2 — Behind the scenes of building it  
-POST 3 — Relatable moment your target user will recognize
-POST 4 — Simple explanation of what your app does (no jargon)
-POST 5 — Engagement post — ask a question your audience will answer
-
-Each post: 1-4 sentences max. Conversational tone. No hashtags needed.
-
-Label each clearly.`,
+Each: 1-4 sentences, conversational, no hashtags.`,
   },
   carousel: {
     label: "Carousel Post",
-    prompt: (app: string) => `Write a 7-slide carousel post for LinkedIn or Instagram for this app: ${app}
+    prompt: (app: string) => `Write a 7-slide carousel for LinkedIn or Instagram for this app: ${app}
 
-SLIDE 1 — Hook slide:
-Bold headline that makes people want to swipe. Use a number or bold claim.
+SLIDE 1 — Hook
+SLIDE 2 — The problem
+SLIDE 3 — Why existing solutions fail
+SLIDE 4 — Your solution
+SLIDE 5 — Key feature 1
+SLIDE 6 — Key feature 2 + social proof
+SLIDE 7 — CTA
 
-SLIDE 2 — The problem:
-Describe the pain point in vivid detail. Make them feel it.
-
-SLIDE 3 — Why existing solutions fail:
-What's wrong with how people solve this today?
-
-SLIDE 4 — The solution (your app):
-Introduce your app. What it does in one clear sentence.
-
-SLIDE 5 — Key feature 1:
-Most important feature with a specific benefit.
-
-SLIDE 6 — Key feature 2 + social proof:
-Second feature + early results or testimonial.
-
-SLIDE 7 — CTA slide:
-Clear next step. Link, offer, or question.
-
-For each slide provide:
-- Headline (under 10 words)
-- Body text (2-3 sentences)
-- Visual suggestion (what image/graphic to use)`,
+Each slide: headline (under 10 words) + body (2-3 sentences) + visual suggestion.`,
   },
 };
 
@@ -226,10 +163,25 @@ export async function POST(request: Request) {
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: parsed.delta.text })}\n\n`));
                 }
                 if (parsed.type === "message_stop") {
-                  await supabase.from("user_usage")
+                  // Save to campaigns
+                  const { data: campaign } = await supabase
+                    .from("campaigns")
+                    .insert({
+                      user_id: user.id,
+                      prompt,
+                      content: fullContent,
+                      content_type: `social_${socialType}`,
+                      title: `${typeConfig.label} — ${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""}`,
+                    })
+                    .select()
+                    .single();
+
+                  await supabase
+                    .from("user_usage")
                     .update({ searches_remaining: usage.searches_remaining - 1 })
                     .eq("user_id", user.id);
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, campaignId: campaign?.id })}\n\n`));
                   controller.close();
                   return;
                 }

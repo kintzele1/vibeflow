@@ -58,53 +58,50 @@ Format:
 - What it does + who it's for
 - CTA at the end
 
-Keep it authentic and personal. LinkedIn rewards vulnerability and storytelling. Under 300 words.`,
+Keep it authentic and personal. Under 300 words.`,
   },
   reddit: {
     label: "Reddit Post",
     prompt: (app: string) => `Write a Reddit launch post for r/SideProject or r/IndieHackers for this app: ${app}
 
 Format:
-- Title: Honest, specific, not salesy (e.g. "I built X because I kept running into Y problem")
+- Title: Honest, specific, not salesy
 - Body: Tell the real story — how long it took, what was hard, what you learned
 - What it does in plain English
 - Current state (beta, free tier, etc.)
 - Ask for genuine feedback
 
-Reddit hates marketing speak. Sound like a real person sharing their project.`,
+Reddit hates marketing speak. Sound like a real person.`,
   },
   youtube: {
     label: "YouTube Script",
     prompt: (app: string) => `Write a YouTube video script for launching this app: ${app}
 
 Include:
-- Hook (first 15 seconds — why should they keep watching?)
+- Hook (first 15 seconds)
 - Problem setup (30 seconds)
-- Solution demo outline (2-3 minutes — describe what to show on screen)
+- Solution demo outline (2-3 minutes)
 - Key features walkthrough
 - Pricing/CTA
-- Outro with subscribe ask
+- Outro
 
-Format with [SCREEN: describe what's on screen] for visual cues.
-Keep it conversational, like you're talking to a friend.`,
+Format with [SCREEN: describe what's on screen] for visual cues.`,
   },
   email_sequence: {
     label: "Email Sequence",
     prompt: (app: string) => `Write a 5-email onboarding sequence for this app: ${app}
 
-Email 1 — Welcome (sent immediately):
-Email 2 — Getting started (Day 1):
-Email 3 — Key feature highlight (Day 3):
-Email 4 — Social proof / use case (Day 7):
-Email 5 — Upgrade/upsell (Day 14):
+Email 1 — Welcome (sent immediately)
+Email 2 — Getting started (Day 1)
+Email 3 — Key feature highlight (Day 3)
+Email 4 — Social proof / use case (Day 7)
+Email 5 — Upgrade/upsell (Day 14)
 
 For each email include:
 - Subject line
 - Preview text
-- Full email body (conversational, under 200 words each)
-- CTA
-
-Make each email feel like it comes from a real founder who cares about the user succeeding.`,
+- Full email body (under 200 words each)
+- CTA`,
   },
 };
 
@@ -141,9 +138,7 @@ export async function POST(request: Request) {
     }
 
     const typeConfig = CONTENT_TYPES[contentType as keyof typeof CONTENT_TYPES];
-    if (!typeConfig) {
-      return new Response("Invalid content type", { status: 400 });
-    }
+    if (!typeConfig) return new Response("Invalid content type", { status: 400 });
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -160,20 +155,13 @@ export async function POST(request: Request) {
               model: "claude-haiku-4-5-20251001",
               max_tokens: 3000,
               stream: true,
-              messages: [
-                {
-                  role: "user",
-                  content: typeConfig.prompt(prompt),
-                },
-              ],
+              messages: [{ role: "user", content: typeConfig.prompt(prompt) }],
             }),
           });
 
           if (!res.ok) {
             const errText = await res.text();
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ error: `${res.status}: ${errText}` })}\n\n`)
-            );
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: `${res.status}: ${errText}` })}\n\n`));
             controller.close();
             return;
           }
@@ -195,20 +183,29 @@ export async function POST(request: Request) {
                 const parsed = JSON.parse(data);
                 if (parsed.type === "content_block_delta" && parsed.delta?.text) {
                   fullContent += parsed.delta.text;
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ text: parsed.delta.text })}\n\n`)
-                  );
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: parsed.delta.text })}\n\n`));
                 }
                 if (parsed.type === "message_stop") {
+                  // Save to campaigns table
+                  const { data: campaign } = await supabase
+                    .from("campaigns")
+                    .insert({
+                      user_id: user.id,
+                      prompt,
+                      content: fullContent,
+                      content_type: contentType,
+                      title: `${typeConfig.label} — ${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""}`,
+                    })
+                    .select()
+                    .single();
+
                   // Deduct search
                   await supabase
                     .from("user_usage")
                     .update({ searches_remaining: usage.searches_remaining - 1 })
                     .eq("user_id", user.id);
 
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ done: true, content: fullContent })}\n\n`)
-                  );
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, campaignId: campaign?.id })}\n\n`));
                   controller.close();
                   return;
                 }
@@ -217,20 +214,14 @@ export async function POST(request: Request) {
           }
           controller.close();
         } catch (err: any) {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`)
-          );
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`));
           controller.close();
         }
       },
     });
 
     return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-      },
+      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
     });
 
   } catch (err: any) {

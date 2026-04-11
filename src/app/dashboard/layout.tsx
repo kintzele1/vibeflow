@@ -9,6 +9,7 @@ const TABS = [
   { label: "Content Marketing", href: "/dashboard/content",        icon: "✍️" },
   { label: "Social Media",      href: "/dashboard/social",         icon: "📱" },
   { label: "My Campaigns",      href: "/dashboard/campaigns",      icon: "📁" },
+  { label: "Calendar",          href: "/dashboard/calendar",       icon: "📅" },
   { label: "Agents",            href: "/dashboard/agents",         icon: "🤖" },
   { label: "Integrations",      href: "/dashboard/integrations",   icon: "🔗" },
   { label: "Analytics Hub",     href: "/dashboard/analytics",      icon: "📊" },

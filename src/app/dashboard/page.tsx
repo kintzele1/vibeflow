@@ -1,22 +1,105 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
+
+const SECTIONS = [
+  "VIBE ANALYSIS", "TAGLINES", "HERO COPY", "TWITTER/X THREAD",
+  "LINKEDIN POST", "REDDIT POST", "PRODUCT HUNT",
+  "EMAIL SEQUENCE", "SEO KEYWORDS", "AD HEADLINES",
+];
 
 export default function DashboardPage() {
   const [prompt, setPrompt] = useState("");
+  const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const outputRef = useRef<HTMLDivElement>(null);
 
-  function handleGenerate() {
-    if (!prompt.trim()) return;
+  async function handleGenerate() {
+    if (!prompt.trim() || loading) return;
     setLoading(true);
-    // AI generation coming in Step 5
-    setTimeout(() => setLoading(false), 1500);
+    setDone(false);
+    setOutput("");
+    setError("");
+    setCampaignId(null);
+
+    try {
+      const response = await fetch("/api/campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (response.status === 402) {
+        const data = await response.json();
+        setError(data.message ?? "No searches remaining.");
+        setLoading(false);
+        return;
+      }
+
+      if (!response.ok) {
+        setError("Something went wrong. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) { setLoading(false); return; }
+
+      while (true) {
+        const { done: streamDone, value } = await reader.read();
+        if (streamDone) break;
+
+        const lines = decoder.decode(value).split("\n\n");
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.text) {
+              setOutput(prev => {
+                const next = prev + data.text;
+                setTimeout(() => {
+                  if (outputRef.current) {
+                    outputRef.current.scrollTop = outputRef.current.scrollHeight;
+                  }
+                }, 10);
+                return next;
+              });
+            }
+            if (data.done) {
+              setDone(true);
+              setCampaignId(data.campaignId ?? null);
+            }
+            if (data.error) {
+              setError(data.error);
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      setError(err.message ?? "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleExport() {
+    const blob = new Blob([output], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vibeflow-campaign-${Date.now()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
-    <div style={{ padding: "40px 48px", maxWidth: 860, margin: "0 auto" }}>
+    <div style={{ padding: "40px 48px", maxWidth: 900, margin: "0 auto" }}>
 
       {/* Header */}
-      <div style={{ marginBottom: 40 }}>
+      <div style={{ marginBottom: 32 }}>
         <h1 style={{
           fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 32,
           color: "#1F1F1F", letterSpacing: "-0.02em", marginBottom: 8,
@@ -29,69 +112,154 @@ export default function DashboardPage() {
       </div>
 
       {/* Prompt box */}
-      <div style={{
-        background: "#FFFFFF", borderRadius: 20,
-        border: "1.5px solid #EEEEEE",
-        boxShadow: "0 4px 24px rgba(5,173,152,0.06)",
-        padding: "28px 32px", marginBottom: 24,
-      }}>
-        <label style={{
-          fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
-          color: "#AAAAAA", letterSpacing: "0.08em", textTransform: "uppercase",
-          display: "block", marginBottom: 12,
+      {!loading && !output && (
+        <div style={{
+          background: "#FFFFFF", borderRadius: 20,
+          border: "1.5px solid #EEEEEE",
+          boxShadow: "0 4px 24px rgba(5,173,152,0.06)",
+          padding: "28px 32px", marginBottom: 24,
         }}>
-          Describe your app
-        </label>
-        <textarea
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-          placeholder="e.g. A habit tracker that actually works — no streaks, no guilt, just a calm daily check-in that takes 30 seconds. iOS app, free with a $4/mo Pro plan..."
-          rows={5}
-          style={{
-            width: "100%", border: "none", outline: "none", resize: "none",
-            fontFamily: "var(--font-dm-sans)", fontSize: 16, color: "#1F1F1F",
-            lineHeight: 1.65, background: "transparent",
-          }}
-        />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 20, paddingTop: 20, borderTop: "1px solid #EEEEEE" }}>
-          <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#AAAAAA" }}>
-            {prompt.length} characters
-          </span>
-          <button
-            onClick={handleGenerate}
-            disabled={loading || !prompt.trim()}
+          <label style={{
+            fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
+            color: "#AAAAAA", letterSpacing: "0.08em", textTransform: "uppercase",
+            display: "block", marginBottom: 12,
+          }}>
+            Describe your app
+          </label>
+          <textarea
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            placeholder="e.g. A habit tracker that actually works — no streaks, no guilt, just a calm daily check-in that takes 30 seconds. iOS app, free with a $4/mo Pro plan. Built with Lovable."
+            rows={5}
             style={{
-              background: loading || !prompt.trim() ? "#AAAAAA" : "#05AD98",
-              color: "#FFFFFF",
-              fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 15,
-              padding: "12px 28px", borderRadius: 999, border: "none",
-              cursor: loading || !prompt.trim() ? "not-allowed" : "pointer",
-              transition: "background 0.15s, transform 0.15s",
+              width: "100%", border: "none", outline: "none", resize: "none",
+              fontFamily: "var(--font-dm-sans)", fontSize: 16, color: "#1F1F1F",
+              lineHeight: 1.65, background: "transparent",
             }}
-            onMouseEnter={e => { if (!loading && prompt.trim()) { e.currentTarget.style.background = "#038C7A"; e.currentTarget.style.transform = "translateY(-1px)"; }}}
-            onMouseLeave={e => { e.currentTarget.style.background = loading || !prompt.trim() ? "#AAAAAA" : "#05AD98"; e.currentTarget.style.transform = "translateY(0)"; }}
-          >
-            {loading ? "Generating..." : "Generate Full Campaign →"}
+          />
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            marginTop: 20, paddingTop: 20, borderTop: "1px solid #EEEEEE",
+          }}>
+            <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#AAAAAA" }}>
+              {prompt.length} characters · 1 search
+            </span>
+            <button
+              onClick={handleGenerate}
+              disabled={!prompt.trim()}
+              style={{
+                background: !prompt.trim() ? "#CCCCCC" : "#05AD98",
+                color: "#FFFFFF",
+                fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 15,
+                padding: "12px 28px", borderRadius: 999, border: "none",
+                cursor: !prompt.trim() ? "not-allowed" : "pointer",
+                transition: "background 0.15s",
+              }}
+            >
+              Generate Full Campaign →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div style={{
+          background: "#FEF2F2", border: "1px solid rgba(226,75,74,0.2)",
+          borderRadius: 12, padding: "16px 20px", marginBottom: 24,
+          fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#E24B4A",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <span>{error}</span>
+          <button onClick={() => { setError(""); setOutput(""); setLoading(false); }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#E24B4A", fontSize: 18 }}>
+            ×
           </button>
         </div>
-      </div>
+      )}
 
-      {/* Coming soon notice */}
-      <div style={{
-        background: "#EEEEFF", borderRadius: 12, padding: "16px 20px",
-        border: "1px solid rgba(96,96,204,0.15)",
-        display: "flex", alignItems: "center", gap: 12,
-      }}>
-        <span style={{ fontSize: 20 }}>🚀</span>
-        <div>
-          <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, fontWeight: 500, color: "#3333AA", marginBottom: 2 }}>
-            AI generation coming in Step 5
-          </div>
-          <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#6060CC" }}>
-            The Claude multi-agent system will generate your full campaign here — content, social, SEO, ads, and more.
-          </div>
+      {/* Loading */}
+      {loading && !output && (
+        <div style={{
+          background: "#FFFFFF", borderRadius: 20, border: "1.5px solid #EEEEEE",
+          padding: "60px 32px", textAlign: "center",
+        }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: "50%",
+            border: "3px solid #E6FAF8", borderTop: "3px solid #05AD98",
+            margin: "0 auto 20px",
+            animation: "spin 0.8s linear infinite",
+            display: "inline-block",
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <p style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 18, color: "#1F1F1F", marginBottom: 8 }}>
+            Generating your campaign...
+          </p>
+          <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#878787" }}>
+            Writing content, social posts, SEO keywords, ad copy, and more.
+          </p>
         </div>
-      </div>
+      )}
+
+      {/* Output */}
+      {output && (
+        <div>
+          {/* Section progress */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+            {SECTIONS.map(s => (
+              <span key={s} style={{
+                fontFamily: "var(--font-dm-sans)", fontSize: 11, fontWeight: 500,
+                padding: "3px 10px", borderRadius: 999,
+                background: output.includes(s) ? "#E6FAF8" : "#F0F0F0",
+                color: output.includes(s) ? "#05AD98" : "#AAAAAA",
+                transition: "all 0.3s",
+              }}>{s}</span>
+            ))}
+          </div>
+
+          {/* Output box */}
+          <div ref={outputRef} style={{
+            background: "#FFFFFF", borderRadius: 20,
+            border: "1.5px solid #EEEEEE",
+            padding: "32px", maxHeight: 560, overflowY: "auto",
+            fontFamily: "var(--font-dm-sans)", fontSize: 15,
+            color: "#333333", lineHeight: 1.8, whiteSpace: "pre-wrap",
+            boxShadow: "0 4px 24px rgba(5,173,152,0.06)",
+          }}>
+            {output}
+            {loading && <span style={{ color: "#05AD98" }}>▌</span>}
+          </div>
+
+          {/* Actions */}
+          {done && (
+            <div style={{ display: "flex", gap: 12, marginTop: 20, flexWrap: "wrap" }}>
+              <button onClick={handleExport} style={{
+                background: "#05AD98", color: "#FFFFFF",
+                fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
+                padding: "10px 24px", borderRadius: 999, border: "none", cursor: "pointer",
+              }}>
+                Export as Markdown ↓
+              </button>
+              <a href="/dashboard/campaigns" style={{
+                background: "#F8F8F8", color: "#1F1F1F",
+                fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
+                padding: "10px 24px", borderRadius: 999, textDecoration: "none",
+                border: "1px solid #EEEEEE", display: "inline-block",
+              }}>
+                View in Campaigns →
+              </a>
+              <button onClick={() => { setOutput(""); setDone(false); setPrompt(""); setCampaignId(null); }} style={{
+                background: "transparent", color: "#878787",
+                fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
+                padding: "10px 24px", borderRadius: 999,
+                border: "1px solid #EEEEEE", cursor: "pointer",
+              }}>
+                New campaign
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

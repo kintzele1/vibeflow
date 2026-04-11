@@ -8,6 +8,7 @@ const TABS = [
   { label: "Vibe Launchpad",    href: "/dashboard",                icon: "⚡" },
   { label: "Content Marketing", href: "/dashboard/content",        icon: "✍️" },
   { label: "Social Media",      href: "/dashboard/social",         icon: "📱" },
+  { label: "Visual Assets",     href: "/dashboard/visuals",        icon: "🎨" },
   { label: "My Campaigns",      href: "/dashboard/campaigns",      icon: "📁" },
   { label: "Calendar",          href: "/dashboard/calendar",       icon: "📅" },
   { label: "Agents",            href: "/dashboard/agents",         icon: "🤖" },

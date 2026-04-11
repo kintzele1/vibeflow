@@ -11,6 +11,7 @@ const TABS = [
   { label: "Visual Assets",     href: "/dashboard/visuals",        icon: "🎨" },
   { label: "My Campaigns",      href: "/dashboard/campaigns",      icon: "📁" },
   { label: "Calendar",          href: "/dashboard/calendar",       icon: "📅" },
+  { label: "Brand Kit",         href: "/dashboard/brand",          icon: "✦" },
   { label: "Agents",            href: "/dashboard/agents",         icon: "🤖" },
   { label: "Integrations",      href: "/dashboard/integrations",   icon: "🔗" },
   { label: "Analytics Hub",     href: "/dashboard/analytics",      icon: "📊" },
@@ -121,10 +122,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {user?.email?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div style={{ overflow: "hidden" }}>
-              <div style={{
-                fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#1F1F1F",
-                fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-              }}>
+              <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#1F1F1F", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {user?.email}
               </div>
               <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 11, color: "#05AD98", textTransform: "capitalize" }}>

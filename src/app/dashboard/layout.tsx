@@ -7,6 +7,7 @@ import { VibeFlowWordmark } from "@/components/logo/SparklerLogo";
 const TABS = [
   { label: "Vibe Launchpad",    href: "/dashboard",                icon: "⚡" },
   { label: "Content Marketing", href: "/dashboard/content",        icon: "✍️" },
+  { label: "Social Media",      href: "/dashboard/social",         icon: "📱" },
   { label: "My Campaigns",      href: "/dashboard/campaigns",      icon: "📁" },
   { label: "Agents",            href: "/dashboard/agents",         icon: "🤖" },
   { label: "Integrations",      href: "/dashboard/integrations",   icon: "🔗" },
@@ -52,8 +53,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#F8F8F8" }}>
-
-      {/* Sidebar */}
       <aside style={{
         width: 240, flexShrink: 0,
         background: "#FFFFFF", borderRight: "1px solid #EEEEEE",
@@ -61,12 +60,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         padding: "24px 0",
         position: "sticky", top: 0, height: "100vh",
       }}>
-        {/* Logo */}
         <div style={{ padding: "0 20px 24px", borderBottom: "1px solid #EEEEEE" }}>
           <VibeFlowWordmark size="sm" colorway="teal" animate={false} />
         </div>
 
-        {/* Nav */}
         <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4, overflowY: "auto" }}>
           {TABS.map(tab => {
             const active = isActive(tab.href);
@@ -92,7 +89,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
-        {/* Usage + user */}
         <div style={{ padding: "16px", borderTop: "1px solid #EEEEEE" }}>
           {searches !== null && (
             <div style={{ marginBottom: 16 }}>
@@ -149,7 +145,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Main */}
       <main style={{ flex: 1, overflow: "auto" }}>
         {children}
       </main>

@@ -25,7 +25,7 @@ export async function POST(request: Request) {
         quantity: 1,
       }],
       mode: plan === "annual" ? "subscription" : "payment",
-      success_url: `${appUrl}/dashboard?success=true`,
+      success_url: `${appUrl}/success`,
       cancel_url: `${appUrl}/#pricing`,
       allow_promotion_codes: true,
     };

@@ -2,10 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { completed } = await request.json();
+    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response("Unauthorized", { status: 401 });
@@ -13,7 +14,7 @@ export async function PATCH(
     const { error } = await supabase
       .from("campaigns")
       .update({ completed })
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id);
 
     if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
@@ -28,9 +29,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response("Unauthorized", { status: 401 });
@@ -38,7 +40,7 @@ export async function DELETE(
     const { error } = await supabase
       .from("campaigns")
       .delete()
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id);
 
     if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });

@@ -18,7 +18,22 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: "VibeFlow Marketing — One prompt. Full campaign. Perfectly on-brand.",
-  description: "AI-powered marketing kit for vibe coders and indie hackers.",
+  description:
+    "AI-powered marketing kit for vibe coders and indie hackers. Describe your app once — get a complete, coordinated campaign across every channel.",
+  keywords: ["marketing", "AI", "indie hacker", "vibe coding", "campaign generator"],
+  openGraph: {
+    title: "VibeFlow Marketing",
+    description: "One prompt. Full campaign. Perfectly on-brand.",
+    type: "website",
+    url: "https://vibeflow.marketing",
+    images: ["/og-image.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "VibeFlow Marketing",
+    description: "One prompt. Full campaign. Perfectly on-brand.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({

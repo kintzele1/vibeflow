@@ -15,7 +15,6 @@ const TABS = [
   { label: "Social Media",      href: "/dashboard/social",       icon: Share2 },
   { label: "SEO",               href: "/dashboard/seo",          icon: Search },
   { label: "Paid Ads",          href: "/dashboard/ppc",          icon: Target },
-  { label: "Visual Assets",     href: "/dashboard/visuals",      icon: Image },
   { label: "My Campaigns",      href: "/dashboard/campaigns",    icon: Folder },
   { label: "Calendar",          href: "/dashboard/calendar",     icon: Calendar },
   { label: "Brand Kit",         href: "/dashboard/brand",        icon: Sparkles },
@@ -24,6 +23,9 @@ const TABS = [
   { label: "Analytics Hub",     href: "/dashboard/analytics",    icon: BarChart2 },
   { label: "Usage & Billing",   href: "/dashboard/billing",      icon: CreditCard },
 ];
+// Visual Assets tab removed at end of Day 2 — tool parked, backend code
+// (/dashboard/visuals + /api/generate-image) kept dormant for later revival.
+// See BACKLOG.md item #16 for the four revival options.
 
 const MOBILE_TABS = [
   { label: "Launch",   href: "/dashboard",         icon: Zap },

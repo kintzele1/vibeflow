@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getBrandKit, formatBrandKitForImagePrompt } from "@/lib/brand";
 
 const IMAGE_TYPES = {
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
     if (!apiKey) return new Response(JSON.stringify({ error: "Missing FAL_API_KEY" }), { status: 500 });
 
     const supabase = await createClient();
+    const admin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response("Unauthorized", { status: 401 });
 
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
     const result = await falRes.json();
     const images = result.images ?? [];
 
-    await supabase.from("user_usage")
+    await admin.from("user_usage")
       .update({ searches_remaining: usage.searches_remaining - 1 }).eq("user_id", user.id);
 
     return new Response(JSON.stringify({ images: images.map((img: any) => ({ url: img.url, width: img.width, height: img.height })) }),

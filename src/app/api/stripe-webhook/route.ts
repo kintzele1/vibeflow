@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const PLAN_SEARCHES: Record<string, number> = {
   launch: 100,
@@ -21,7 +21,8 @@ export async function POST(request: Request) {
       event = JSON.parse(body);
     }
 
-    const supabase = await createClient();
+    // Stripe has no user session — use service-role client so the upsert bypasses RLS.
+    const supabase = createAdminClient();
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;

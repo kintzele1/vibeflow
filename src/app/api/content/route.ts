@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getBrandKit, formatBrandKitForPrompt } from "@/lib/brand";
 
 const CONTENT_TYPES = {
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
     if (!apiKey) return new Response(JSON.stringify({ error: "Missing API key" }), { status: 500 });
 
     const supabase = await createClient();
+    const admin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response("Unauthorized", { status: 401 });
 
@@ -82,7 +84,7 @@ export async function POST(request: Request) {
                     title: `${typeConfig.label} — ${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""}`,
                     brand_kit_applied: applyBrandKit ?? false,
                   }).select().single();
-                  await supabase.from("user_usage").update({ searches_remaining: usage.searches_remaining - 1 }).eq("user_id", user.id);
+                  await admin.from("user_usage").update({ searches_remaining: usage.searches_remaining - 1 }).eq("user_id", user.id);
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, campaignId: campaign?.id })}\n\n`));
                   controller.close(); return;
                 }

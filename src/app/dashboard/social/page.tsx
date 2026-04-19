@@ -1,5 +1,6 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { BrandKitToggle } from "@/components/dashboard/BrandKitToggle";
 
 const SOCIAL_TYPES = [
   { id: "x_post",        label: "X Posts",          icon: "𝕏",  desc: "3 posts, different angles" },
@@ -18,7 +19,29 @@ export default function SocialPage() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [applyBrandKit, setApplyBrandKit] = useState(false);
+  const [hasBrandKit, setHasBrandKit] = useState(false);
+  const [isRefresh, setIsRefresh] = useState(false);
   const outputRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const p = params.get("prompt");
+    const t = params.get("type");
+    const r = params.get("refresh");
+    if (p) setPrompt(p);
+    if (t && SOCIAL_TYPES.some(s => s.id === t)) setSelected(t);
+    if (r === "1") setIsRefresh(true);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/brand").then(r => r.json()).then(data => {
+      const kit = data.brand;
+      const has = !!(kit?.app_name || kit?.brand_voice?.length || kit?.primary_color);
+      setHasBrandKit(has);
+      if (has) setApplyBrandKit(true);
+    });
+  }, []);
 
   async function handleGenerate() {
     if (!prompt.trim() || !selected || loading) return;
@@ -31,7 +54,7 @@ export default function SocialPage() {
       const response = await fetch("/api/social", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, socialType: selected }),
+        body: JSON.stringify({ prompt, socialType: selected, applyBrandKit }),
       });
 
       if (response.status === 402) {
@@ -108,8 +131,27 @@ export default function SocialPage() {
         </p>
       </div>
 
+      {isRefresh && (
+        <div style={{
+          background: "#F0F5FF", border: "1px solid rgba(79,91,239,0.2)",
+          borderRadius: 12, padding: "12px 16px", marginBottom: 20,
+          fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#4F5BEF",
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <span>✨</span>
+          <span>Regenerating with your latest Brand Kit. Your original is preserved in My Campaigns. Uses 1 search.</span>
+        </div>
+      )}
+
       {!output && (
         <>
+          {/* Brand Kit toggle */}
+          <BrandKitToggle
+            enabled={applyBrandKit}
+            onChange={setApplyBrandKit}
+            hasBrandKit={hasBrandKit}
+          />
+
           {/* Platform selector */}
           <div style={{ marginBottom: 24 }}>
             <div style={{

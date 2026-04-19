@@ -1,5 +1,6 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { BrandKitToggle } from "@/components/dashboard/BrandKitToggle";
 
 const CONTENT_TYPES = [
   { id: "blog",           label: "Blog Post",        icon: "✍️", desc: "SEO-optimized, 800-1000 words" },
@@ -18,7 +19,32 @@ export default function ContentPage() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [applyBrandKit, setApplyBrandKit] = useState(false);
+  const [hasBrandKit, setHasBrandKit] = useState(false);
+  const [isRefresh, setIsRefresh] = useState(false);
   const outputRef = useRef<HTMLDivElement>(null);
+
+  // Pre-fill from URL params (refresh flow from campaign library)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const p = params.get("prompt");
+    const t = params.get("type");
+    const r = params.get("refresh");
+    if (p) setPrompt(p);
+    if (t && CONTENT_TYPES.some(c => c.id === t)) setSelected(t);
+    if (r === "1") setIsRefresh(true);
+  }, []);
+
+  // Fetch brand kit status
+  useEffect(() => {
+    fetch("/api/brand").then(r => r.json()).then(data => {
+      const kit = data.brand;
+      const has = !!(kit?.app_name || kit?.brand_voice?.length || kit?.primary_color);
+      setHasBrandKit(has);
+      // If refreshing, force brand kit on. Otherwise default on when a kit exists.
+      if (has) setApplyBrandKit(true);
+    });
+  }, []);
 
   async function handleGenerate() {
     if (!prompt.trim() || !selected || loading) return;
@@ -31,7 +57,7 @@ export default function ContentPage() {
       const response = await fetch("/api/content", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, contentType: selected }),
+        body: JSON.stringify({ prompt, contentType: selected, applyBrandKit }),
       });
 
       if (response.status === 402) {
@@ -120,8 +146,27 @@ export default function ContentPage() {
         </p>
       </div>
 
+      {isRefresh && (
+        <div style={{
+          background: "#F0F5FF", border: "1px solid rgba(79,91,239,0.2)",
+          borderRadius: 12, padding: "12px 16px", marginBottom: 20,
+          fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#4F5BEF",
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <span>✨</span>
+          <span>Regenerating with your latest Brand Kit. Your original campaign is preserved in My Campaigns. Uses 1 search.</span>
+        </div>
+      )}
+
       {!output && (
         <>
+          {/* Brand Kit toggle */}
+          <BrandKitToggle
+            enabled={applyBrandKit}
+            onChange={setApplyBrandKit}
+            hasBrandKit={hasBrandKit}
+          />
+
           {/* Content type selector */}
           <div style={{ marginBottom: 24 }}>
             <div style={{

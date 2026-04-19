@@ -10,7 +10,40 @@ type Campaign = {
   content_type: string;
   created_at: string;
   completed: boolean;
+  brand_kit_applied: boolean | null;
 };
+
+// Maps a saved campaign's content_type to the agent page that can regenerate it.
+// Image generations and anything unmapped fall back to the main Launchpad.
+const CONTENT_TYPE_ROUTES: Record<string, string> = {
+  campaign:              "/dashboard",
+  blog:                  "/dashboard/content",
+  newsletter:            "/dashboard/content",
+  twitter:               "/dashboard/content",
+  linkedin:              "/dashboard/content",
+  reddit:                "/dashboard/content",
+  youtube:               "/dashboard/content",
+  email_sequence:        "/dashboard/content",
+  social_x_post:         "/dashboard/social",
+  social_linkedin_posts: "/dashboard/social",
+  social_instagram:      "/dashboard/social",
+  social_tiktok:         "/dashboard/social",
+  social_reddit_posts:   "/dashboard/social",
+  social_threads:        "/dashboard/social",
+  social_carousel:       "/dashboard/social",
+};
+
+function refreshHref(campaign: Campaign): string {
+  const base = CONTENT_TYPE_ROUTES[campaign.content_type] ?? "/dashboard";
+  const params = new URLSearchParams({ prompt: campaign.prompt, refresh: "1" });
+  if (base === "/dashboard/content") {
+    params.set("type", campaign.content_type);
+  } else if (base === "/dashboard/social") {
+    // social_x_post → x_post. The social page expects the bare key.
+    params.set("type", campaign.content_type.replace(/^social_/, ""));
+  }
+  return `${base}?${params.toString()}`;
+}
 
 const TYPE_LABELS: Record<string, { label: string; icon: string }> = {
   campaign:              { label: "Full Campaign",     icon: "⚡" },
@@ -381,6 +414,19 @@ export default function CampaignsPage() {
                   fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
                   padding: "8px 18px", borderRadius: 999, border: "1px solid #EEEEEE", cursor: "pointer",
                 }}>Copy</button>
+                {selected.brand_kit_applied && (
+                  <a
+                    href={refreshHref(selected)}
+                    title="Regenerate this with your current Brand Kit. Costs 1 search. Original is preserved."
+                    style={{
+                      background: "#F0F5FF", color: "#4F5BEF",
+                      fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+                      padding: "8px 18px", borderRadius: 999,
+                      border: "none", cursor: "pointer", textDecoration: "none",
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                    }}
+                  >✨ Refresh with latest brand</a>
+                )}
                 <button
                   onClick={(e) => { e.stopPropagation(); setDeleteConfirm(selected.id); }}
                   style={{

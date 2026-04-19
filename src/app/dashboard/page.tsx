@@ -17,6 +17,16 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [applyBrandKit, setApplyBrandKit] = useState(false);
   const [hasBrandKit, setHasBrandKit] = useState(false);
+  const [isRefresh, setIsRefresh] = useState(false);
+
+  // Pre-fill from URL params (refresh flow from campaign library)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const p = params.get("prompt");
+    const r = params.get("refresh");
+    if (p) setPrompt(p);
+    if (r === "1") setIsRefresh(true);
+  }, []);
 
   useEffect(() => {
     fetch("/api/brand").then(r => r.json()).then(data => {
@@ -79,6 +89,18 @@ export default function DashboardPage() {
   return (
     <div style={{ padding: "40px 48px", maxWidth: 900, margin: "0 auto" }}>
       <SuccessBanner />
+
+      {isRefresh && (
+        <div style={{
+          background: "#F0F5FF", border: "1px solid rgba(79,91,239,0.2)",
+          borderRadius: 12, padding: "12px 16px", marginBottom: 20,
+          fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#4F5BEF",
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <span>✨</span>
+          <span>Regenerating with your latest Brand Kit. Your original campaign is preserved in My Campaigns. Uses 1 search.</span>
+        </div>
+      )}
 
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 32, color: "#1F1F1F", letterSpacing: "-0.02em", marginBottom: 8 }}>

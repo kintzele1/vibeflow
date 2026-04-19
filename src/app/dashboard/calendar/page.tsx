@@ -27,6 +27,16 @@ const TYPE_LABELS: Record<string, { label: string; icon: string; color: string }
   social_reddit_posts:   { label: "Reddit",          icon: "👾", color: "#FF4500" },
   social_threads:        { label: "Threads",         icon: "🧵", color: "#1F1F1F" },
   social_carousel:       { label: "Carousel",        icon: "🎠", color: "#6060CC" },
+  seo_keywords:          { label: "Keywords",        icon: "🔑", color: "#8B5CF6" },
+  seo_on_page:           { label: "On-Page SEO",     icon: "📄", color: "#8B5CF6" },
+  seo_technical:         { label: "Technical SEO",   icon: "⚙️", color: "#8B5CF6" },
+  seo_briefs:            { label: "Content Brief",   icon: "📋", color: "#8B5CF6" },
+  seo_backlinks:         { label: "Backlinks",       icon: "🔗", color: "#8B5CF6" },
+  ppc_google:            { label: "Google Ads",      icon: "🎯", color: "#4285F4" },
+  ppc_meta:              { label: "Meta Ads",        icon: "📘", color: "#1877F2" },
+  ppc_linkedin:          { label: "LinkedIn Ads",    icon: "in", color: "#0077B5" },
+  ppc_x:                 { label: "X Ads",           icon: "𝕏",  color: "#1F1F1F" },
+  ppc_tiktok:            { label: "TikTok Ads",      icon: "🎵", color: "#010101" },
 };
 
 function getTypeInfo(type: string) {

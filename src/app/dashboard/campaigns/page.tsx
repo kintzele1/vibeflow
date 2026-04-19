@@ -31,6 +31,16 @@ const CONTENT_TYPE_ROUTES: Record<string, string> = {
   social_reddit_posts:   "/dashboard/social",
   social_threads:        "/dashboard/social",
   social_carousel:       "/dashboard/social",
+  seo_keywords:          "/dashboard/seo",
+  seo_on_page:           "/dashboard/seo",
+  seo_technical:         "/dashboard/seo",
+  seo_briefs:            "/dashboard/seo",
+  seo_backlinks:         "/dashboard/seo",
+  ppc_google:            "/dashboard/ppc",
+  ppc_meta:              "/dashboard/ppc",
+  ppc_linkedin:          "/dashboard/ppc",
+  ppc_x:                 "/dashboard/ppc",
+  ppc_tiktok:            "/dashboard/ppc",
 };
 
 function refreshHref(campaign: Campaign): string {
@@ -41,6 +51,10 @@ function refreshHref(campaign: Campaign): string {
   } else if (base === "/dashboard/social") {
     // social_x_post → x_post. The social page expects the bare key.
     params.set("type", campaign.content_type.replace(/^social_/, ""));
+  } else if (base === "/dashboard/seo") {
+    params.set("type", campaign.content_type.replace(/^seo_/, ""));
+  } else if (base === "/dashboard/ppc") {
+    params.set("type", campaign.content_type.replace(/^ppc_/, ""));
   }
   return `${base}?${params.toString()}`;
 }
@@ -61,6 +75,16 @@ const TYPE_LABELS: Record<string, { label: string; icon: string }> = {
   social_reddit_posts:   { label: "Reddit Posts",       icon: "👾" },
   social_threads:        { label: "Threads",            icon: "🧵" },
   social_carousel:       { label: "Carousel Post",      icon: "🎠" },
+  seo_keywords:          { label: "Keyword Research",   icon: "🔑" },
+  seo_on_page:           { label: "On-Page SEO",        icon: "📄" },
+  seo_technical:         { label: "Technical SEO",      icon: "⚙️" },
+  seo_briefs:            { label: "Content Brief",      icon: "📋" },
+  seo_backlinks:         { label: "Backlink Outreach",  icon: "🔗" },
+  ppc_google:            { label: "Google Ads",         icon: "🎯" },
+  ppc_meta:              { label: "Meta Ads",           icon: "📘" },
+  ppc_linkedin:          { label: "LinkedIn Ads",       icon: "in" },
+  ppc_x:                 { label: "X Ads",              icon: "𝕏"  },
+  ppc_tiktok:            { label: "TikTok Ads",         icon: "🎵" },
 };
 
 function getTypeInfo(type: string) {

@@ -5,13 +5,16 @@ import { createClient } from "@/lib/supabase/client";
 import { VibeFlowWordmark } from "@/components/logo/SparklerLogo";
 import {
   Zap, PenLine, Share2, Image, Folder, Calendar,
-  Sparkles, Bot, Link, BarChart2, CreditCard, LogOut, Menu, X
+  Sparkles, Bot, Link, BarChart2, CreditCard, LogOut, Menu, X,
+  Search, Target
 } from "lucide-react";
 
 const TABS = [
   { label: "Vibe Launchpad",    href: "/dashboard",              icon: Zap },
   { label: "Content Marketing", href: "/dashboard/content",      icon: PenLine },
   { label: "Social Media",      href: "/dashboard/social",       icon: Share2 },
+  { label: "SEO",               href: "/dashboard/seo",          icon: Search },
+  { label: "Paid Ads",          href: "/dashboard/ppc",          icon: Target },
   { label: "Visual Assets",     href: "/dashboard/visuals",      icon: Image },
   { label: "My Campaigns",      href: "/dashboard/campaigns",    icon: Folder },
   { label: "Calendar",          href: "/dashboard/calendar",     icon: Calendar },

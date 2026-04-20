@@ -54,11 +54,11 @@ export function Hero() {
 
         {/* CTA buttons */}
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>
-          <a href="#pricing" style={{
+          <a href="/login" style={{
             background: "#05AD98", color: "#FFFFFF",
             fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 16,
             padding: "14px 32px", borderRadius: 999, textDecoration: "none",
-          }}>Get Launch Kit — $49.99</a>
+          }}>Start Free — No Credit Card</a>
           <a href="#how-it-works" style={{
             background: "#F8F8F8", color: "#1F1F1F",
             fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 16,

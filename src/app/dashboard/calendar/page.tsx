@@ -37,6 +37,16 @@ const TYPE_LABELS: Record<string, { label: string; icon: string; color: string }
   ppc_linkedin:          { label: "LinkedIn Ads",    icon: "in", color: "#0077B5" },
   ppc_x:                 { label: "X Ads",           icon: "𝕏",  color: "#1F1F1F" },
   ppc_tiktok:            { label: "TikTok Ads",      icon: "🎵", color: "#010101" },
+  email_welcome:         { label: "Welcome Series",  icon: "👋", color: "#05AD98" },
+  email_onboarding:      { label: "Onboarding",      icon: "🚀", color: "#05AD98" },
+  email_upsell:          { label: "Upsell",          icon: "💰", color: "#05AD98" },
+  email_reengagement:    { label: "Re-engagement",   icon: "💌", color: "#05AD98" },
+  email_broadcast:       { label: "Broadcast",       icon: "📢", color: "#05AD98" },
+  aso_title_subtitle:    { label: "Title + Subtitle", icon: "🏷️", color: "#FF9500" },
+  aso_description:       { label: "Store Desc",      icon: "📄", color: "#FF9500" },
+  aso_keywords:          { label: "ASO Keywords",    icon: "🔑", color: "#FF9500" },
+  aso_screenshots:       { label: "Screenshots",     icon: "📸", color: "#FF9500" },
+  aso_preview_video:     { label: "Preview Video",   icon: "🎬", color: "#FF9500" },
 };
 
 function getTypeInfo(type: string) {

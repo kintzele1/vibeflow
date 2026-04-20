@@ -24,7 +24,7 @@ export function Pricing() {
 
   return (
     <section id="pricing" style={{ padding: "100px 24px", background: "#F8F8F8" }}>
-      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
 
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 48 }}>
@@ -80,7 +80,50 @@ export function Pricing() {
         </div>
 
         {/* Plans */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(310px, 1fr))", gap: 24 }}>
+
+          {/* Free */}
+          <div style={{
+            border: "1.5px solid #EEEEEE", borderRadius: 24, padding: "40px 32px",
+            background: "#FFFFFF",
+          }}>
+            <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 22, color: "#1F1F1F", marginBottom: 6 }}>
+              Free
+            </div>
+            <div style={{
+              fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", fontWeight: 500,
+              background: "#F0F0F0", display: "inline-block", padding: "3px 10px", borderRadius: 6, marginBottom: 16,
+            }}>Try every agent before you pay</div>
+            <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 48, color: "#1F1F1F", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 4 }}>
+              $0
+            </div>
+            <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", fontWeight: 500, marginBottom: 4 }}>&nbsp;</div>
+            <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#878787", marginBottom: 32 }}>
+              Forever · 1 generation per agent · 7 total
+            </div>
+            <ul style={{ listStyle: "none", marginBottom: 32, display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                "1 full campaign (Launchpad)",
+                "1 content piece · 1 social set",
+                "1 SEO · 1 Paid Ads · 1 Email · 1 ASO",
+                "Brand Kit, Calendar, saved campaigns",
+                "No credit card required",
+              ].map(item => (
+                <li key={item} style={{ fontFamily: "var(--font-dm-sans)", fontSize: 15, color: "#555555", display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ color: "#05AD98", fontWeight: 700 }}>✓</span>{item}
+                </li>
+              ))}
+            </ul>
+            <a href="/login" style={{
+              display: "block", width: "100%", textAlign: "center", boxSizing: "border-box",
+              background: "#FFFFFF", color: "#1F1F1F",
+              fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 16,
+              padding: "14px 28px", borderRadius: 999, textDecoration: "none",
+              border: "1.5px solid #1F1F1F",
+            }}>
+              Start free →
+            </a>
+          </div>
 
           {/* Launch Kit */}
           <div style={{

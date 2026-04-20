@@ -7,8 +7,8 @@ const AGENTS: Agent[] = [
   { icon: "📱", name: "Social Media", desc: "X, LinkedIn, TikTok, Instagram, Reddit — captions, hashtags, scheduling.", status: "live", href: "/dashboard/social" },
   { icon: "🔍", name: "SEO", desc: "Keyword research, on-page, technical SEO, content briefs, backlink outreach.", status: "live", href: "/dashboard/seo" },
   { icon: "🎯", name: "Paid Ads (PPC)", desc: "Google, Meta, LinkedIn, X, TikTok ads with copy and targeting.", status: "live", href: "/dashboard/ppc" },
-  { icon: "📧", name: "Email Marketing", desc: "Welcome flows, onboarding, upsell, and re-engagement sequences.", status: "coming" },
-  { icon: "📲", name: "ASO", desc: "App Store and Google Play titles, keywords, descriptions, screenshots.", status: "coming" },
+  { icon: "📧", name: "Email Marketing", desc: "Welcome, onboarding, upsell, re-engagement sequences + broadcasts.", status: "live", href: "/dashboard/email" },
+  { icon: "📲", name: "ASO", desc: "App Store + Google Play titles, keywords, descriptions, screenshots, video scripts.", status: "live", href: "/dashboard/aso" },
   { icon: "📊", name: "Analytics", desc: "Unified GA4 dashboard, predictive ROI, automated recommendations.", status: "coming" },
   { icon: "🚀", name: "Community & Launch", desc: "Product Hunt kits, influencer outreach, Discord/Reddit, PR pitches.", status: "coming" },
 ];

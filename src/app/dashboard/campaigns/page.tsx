@@ -41,6 +41,16 @@ const CONTENT_TYPE_ROUTES: Record<string, string> = {
   ppc_linkedin:          "/dashboard/ppc",
   ppc_x:                 "/dashboard/ppc",
   ppc_tiktok:            "/dashboard/ppc",
+  email_welcome:         "/dashboard/email",
+  email_onboarding:      "/dashboard/email",
+  email_upsell:          "/dashboard/email",
+  email_reengagement:    "/dashboard/email",
+  email_broadcast:       "/dashboard/email",
+  aso_title_subtitle:    "/dashboard/aso",
+  aso_description:       "/dashboard/aso",
+  aso_keywords:          "/dashboard/aso",
+  aso_screenshots:       "/dashboard/aso",
+  aso_preview_video:     "/dashboard/aso",
 };
 
 function refreshHref(campaign: Campaign): string {
@@ -55,6 +65,10 @@ function refreshHref(campaign: Campaign): string {
     params.set("type", campaign.content_type.replace(/^seo_/, ""));
   } else if (base === "/dashboard/ppc") {
     params.set("type", campaign.content_type.replace(/^ppc_/, ""));
+  } else if (base === "/dashboard/email") {
+    params.set("type", campaign.content_type.replace(/^email_/, ""));
+  } else if (base === "/dashboard/aso") {
+    params.set("type", campaign.content_type.replace(/^aso_/, ""));
   }
   return `${base}?${params.toString()}`;
 }
@@ -85,6 +99,16 @@ const TYPE_LABELS: Record<string, { label: string; icon: string }> = {
   ppc_linkedin:          { label: "LinkedIn Ads",       icon: "in" },
   ppc_x:                 { label: "X Ads",              icon: "𝕏"  },
   ppc_tiktok:            { label: "TikTok Ads",         icon: "🎵" },
+  email_welcome:         { label: "Welcome Series",     icon: "👋" },
+  email_onboarding:      { label: "Onboarding",         icon: "🚀" },
+  email_upsell:          { label: "Upsell",             icon: "💰" },
+  email_reengagement:    { label: "Re-engagement",      icon: "💌" },
+  email_broadcast:       { label: "Broadcast Email",    icon: "📢" },
+  aso_title_subtitle:    { label: "Title + Subtitle",   icon: "🏷️" },
+  aso_description:       { label: "Store Description",  icon: "📄" },
+  aso_keywords:          { label: "ASO Keywords",       icon: "🔑" },
+  aso_screenshots:       { label: "Screenshots",        icon: "📸" },
+  aso_preview_video:     { label: "Preview Video",      icon: "🎬" },
 };
 
 function getTypeInfo(type: string) {

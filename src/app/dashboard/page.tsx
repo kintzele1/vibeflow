@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { BrandKitToggle } from "@/components/dashboard/BrandKitToggle";
 import SuccessBanner from "@/components/dashboard/SuccessBanner";
+import { createClient } from "@/lib/supabase/client";
 
 const SECTIONS = [
   "VIBE ANALYSIS", "TAGLINES", "HERO COPY", "TWITTER/X THREAD",
@@ -18,6 +19,7 @@ export default function DashboardPage() {
   const [applyBrandKit, setApplyBrandKit] = useState(false);
   const [hasBrandKit, setHasBrandKit] = useState(false);
   const [isRefresh, setIsRefresh] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   // Pre-fill from URL params (refresh flow from campaign library)
   useEffect(() => {
@@ -26,6 +28,28 @@ export default function DashboardPage() {
     const r = params.get("refresh");
     if (p) setPrompt(p);
     if (r === "1") setIsRefresh(true);
+  }, []);
+
+  // Show welcome banner for brand-new free users who haven't used any agent yet.
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("user_usage")
+        .select("plan, free_launchpad_used, free_content_used, free_social_used, free_seo_used, free_ppc_used, free_email_used, free_aso_used")
+        .eq("user_id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (!data) return;
+          if (data.plan !== "free") return;
+          const anyUsed = [
+            data.free_launchpad_used, data.free_content_used, data.free_social_used,
+            data.free_seo_used, data.free_ppc_used, data.free_email_used, data.free_aso_used,
+          ].some(Boolean);
+          if (!anyUsed) setShowWelcome(true);
+        });
+    });
   }, []);
 
   useEffect(() => {
@@ -89,6 +113,50 @@ export default function DashboardPage() {
   return (
     <div style={{ padding: "40px 48px", maxWidth: 900, margin: "0 auto" }}>
       <SuccessBanner />
+
+      {showWelcome && (
+        <div style={{
+          background: "linear-gradient(135deg, #E6FAF8 0%, #F0F5FF 100%)",
+          border: "1px solid rgba(5,173,152,0.2)",
+          borderRadius: 16, padding: "20px 24px", marginBottom: 20,
+          display: "flex", alignItems: "flex-start", gap: 14,
+          position: "relative",
+        }}>
+          <div style={{ fontSize: 28, flexShrink: 0 }}>✨</div>
+          <div style={{ flex: 1 }}>
+            <div style={{
+              fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 16,
+              color: "#1F1F1F", marginBottom: 6,
+            }}>
+              Welcome to VibeFlow — you're on the free tier
+            </div>
+            <div style={{
+              fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#555555",
+              lineHeight: 1.6, marginBottom: 10,
+            }}>
+              You get <strong>1 free generation per agent</strong> — 7 total across the Launchpad, Content, Social, Email, SEO, Paid Ads, and ASO. Start here with a full campaign, or skip to any agent in the sidebar. Upgrade any time for 100 searches across everything.
+            </div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <a href="/dashboard/brand" style={{
+                fontFamily: "var(--font-dm-sans)", fontSize: 13, fontWeight: 500,
+                color: "#05AD98", background: "#FFFFFF",
+                padding: "6px 14px", borderRadius: 999, textDecoration: "none",
+                border: "1px solid rgba(5,173,152,0.3)",
+              }}>Set up Brand Kit first →</a>
+              <a href="/#pricing" style={{
+                fontFamily: "var(--font-dm-sans)", fontSize: 13, fontWeight: 500,
+                color: "#878787", textDecoration: "none",
+                padding: "6px 14px",
+              }}>See pricing →</a>
+            </div>
+          </div>
+          <button onClick={() => setShowWelcome(false)} style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: "#AAAAAA", fontSize: 20, padding: 4, lineHeight: 1,
+            position: "absolute", top: 12, right: 14,
+          }}>×</button>
+        </div>
+      )}
 
       {isRefresh && (
         <div style={{

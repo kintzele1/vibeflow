@@ -6,15 +6,17 @@ import { VibeFlowWordmark } from "@/components/logo/SparklerLogo";
 import {
   Zap, PenLine, Share2, Image, Folder, Calendar,
   Sparkles, Bot, Link, BarChart2, CreditCard, LogOut, Menu, X,
-  Search, Target
+  Search, Target, Mail, Smartphone
 } from "lucide-react";
 
 const TABS = [
   { label: "Vibe Launchpad",    href: "/dashboard",              icon: Zap },
   { label: "Content Marketing", href: "/dashboard/content",      icon: PenLine },
   { label: "Social Media",      href: "/dashboard/social",       icon: Share2 },
+  { label: "Email Marketing",   href: "/dashboard/email",        icon: Mail },
   { label: "SEO",               href: "/dashboard/seo",          icon: Search },
   { label: "Paid Ads",          href: "/dashboard/ppc",          icon: Target },
+  { label: "ASO",               href: "/dashboard/aso",          icon: Smartphone },
   { label: "My Campaigns",      href: "/dashboard/campaigns",    icon: Folder },
   { label: "Calendar",          href: "/dashboard/calendar",     icon: Calendar },
   { label: "Brand Kit",         href: "/dashboard/brand",        icon: Sparkles },
@@ -41,6 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null);
   const [searches, setSearches] = useState<number | null>(null);
   const [plan, setPlan] = useState<string>("free");
+  const [freeUsedCount, setFreeUsedCount] = useState<number>(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -53,8 +56,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   async function fetchUsage(userId: string) {
     const { data } = await supabase
-      .from("user_usage").select("searches_remaining, plan").eq("user_id", userId).single();
-    if (data) { setSearches(data.searches_remaining); setPlan(data.plan); }
+      .from("user_usage")
+      .select("searches_remaining, plan, free_launchpad_used, free_content_used, free_social_used, free_seo_used, free_ppc_used, free_email_used, free_aso_used")
+      .eq("user_id", userId).single();
+    if (data) {
+      setSearches(data.searches_remaining);
+      setPlan(data.plan);
+      const used = [
+        data.free_launchpad_used, data.free_content_used, data.free_social_used,
+        data.free_seo_used, data.free_ppc_used, data.free_email_used, data.free_aso_used,
+      ].filter(Boolean).length;
+      setFreeUsedCount(used);
+    }
   }
 
   async function handleSignOut() {
@@ -100,7 +113,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </nav>
 
       <div style={{ padding: "16px", borderTop: "1px solid #EEEEEE" }}>
-        {searches !== null && (
+        {plan === "free" ? (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#878787" }}>Free tier</span>
+              <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500, color: "#1F1F1F" }}>{freeUsedCount} of 7 agents</span>
+            </div>
+            <div style={{ height: 4, background: "#EEEEEE", borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
+              <div style={{
+                height: "100%", borderRadius: 999,
+                background: freeUsedCount >= 7 ? "#E24B4A" : freeUsedCount >= 5 ? "#F59E0B" : "#05AD98",
+                width: `${(freeUsedCount / 7) * 100}%`,
+                transition: "width 0.3s ease",
+              }} />
+            </div>
+            <a href="/#pricing" style={{
+              display: "block", textAlign: "center",
+              fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
+              color: "#05AD98", background: "#E6FAF8",
+              padding: "6px 12px", borderRadius: 8, textDecoration: "none",
+            }}>
+              Upgrade →
+            </a>
+          </div>
+        ) : searches !== null && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
               <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#878787" }}>Searches</span>

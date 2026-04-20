@@ -26,8 +26,24 @@ export async function POST(request: Request) {
     if (!user) return new Response("Unauthorized", { status: 401 });
 
     const { data: usage } = await supabase
-      .from("user_usage").select("searches_remaining").eq("user_id", user.id).single();
-    if (!usage || usage.searches_remaining <= 0) {
+      .from("user_usage")
+      .select("searches_remaining, plan, free_social_used")
+      .eq("user_id", user.id).single();
+
+    if (!usage) {
+      return new Response(JSON.stringify({ error: "no_usage_record", message: "Account not set up." }),
+        { status: 500, headers: { "Content-Type": "application/json" } });
+    }
+
+    if (usage.plan === "free") {
+      if (usage.free_social_used) {
+        return new Response(JSON.stringify({
+          error: "free_limit",
+          agent: "social",
+          message: "You've used your free Social Media generation. Upgrade to the Launch Kit ($49) for 100 searches across every agent.",
+        }), { status: 402, headers: { "Content-Type": "application/json" } });
+      }
+    } else if (usage.searches_remaining <= 0) {
       return new Response(JSON.stringify({ error: "no_searches", message: "No searches remaining." }),
         { status: 402, headers: { "Content-Type": "application/json" } });
     }
@@ -84,7 +100,11 @@ export async function POST(request: Request) {
                     title: `${typeConfig.label} — ${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""}`,
                     brand_kit_applied: applyBrandKit ?? false,
                   }).select().single();
-                  await admin.from("user_usage").update({ searches_remaining: usage.searches_remaining - 1 }).eq("user_id", user.id);
+                  if (usage.plan === "free") {
+                    await admin.from("user_usage").update({ free_social_used: true }).eq("user_id", user.id);
+                  } else {
+                    await admin.from("user_usage").update({ searches_remaining: usage.searches_remaining - 1 }).eq("user_id", user.id);
+                  }
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, campaignId: campaign?.id })}\n\n`));
                   controller.close(); return;
                 }

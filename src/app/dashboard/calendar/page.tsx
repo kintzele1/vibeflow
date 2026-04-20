@@ -47,6 +47,11 @@ const TYPE_LABELS: Record<string, { label: string; icon: string; color: string }
   aso_keywords:          { label: "ASO Keywords",    icon: "🔑", color: "#FF9500" },
   aso_screenshots:       { label: "Screenshots",     icon: "📸", color: "#FF9500" },
   aso_preview_video:     { label: "Preview Video",   icon: "🎬", color: "#FF9500" },
+  community_product_hunt:        { label: "Product Hunt Kit", icon: "🚀", color: "#DA552F" },
+  community_influencer_outreach: { label: "Influencer",       icon: "🎤", color: "#DA552F" },
+  community_reddit_discord:      { label: "Reddit + Discord", icon: "👾", color: "#DA552F" },
+  community_pr_pitch:            { label: "PR Pitch",         icon: "📰", color: "#DA552F" },
+  community_launch_x_thread:     { label: "Launch X Thread",  icon: "𝕏",  color: "#1F1F1F" },
 };
 
 function getTypeInfo(type: string) {

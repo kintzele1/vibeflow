@@ -51,6 +51,11 @@ const CONTENT_TYPE_ROUTES: Record<string, string> = {
   aso_keywords:          "/dashboard/aso",
   aso_screenshots:       "/dashboard/aso",
   aso_preview_video:     "/dashboard/aso",
+  community_product_hunt:        "/dashboard/community",
+  community_influencer_outreach: "/dashboard/community",
+  community_reddit_discord:      "/dashboard/community",
+  community_pr_pitch:            "/dashboard/community",
+  community_launch_x_thread:     "/dashboard/community",
 };
 
 function refreshHref(campaign: Campaign): string {
@@ -69,6 +74,8 @@ function refreshHref(campaign: Campaign): string {
     params.set("type", campaign.content_type.replace(/^email_/, ""));
   } else if (base === "/dashboard/aso") {
     params.set("type", campaign.content_type.replace(/^aso_/, ""));
+  } else if (base === "/dashboard/community") {
+    params.set("type", campaign.content_type.replace(/^community_/, ""));
   }
   return `${base}?${params.toString()}`;
 }
@@ -109,6 +116,11 @@ const TYPE_LABELS: Record<string, { label: string; icon: string }> = {
   aso_keywords:          { label: "ASO Keywords",       icon: "🔑" },
   aso_screenshots:       { label: "Screenshots",        icon: "📸" },
   aso_preview_video:     { label: "Preview Video",      icon: "🎬" },
+  community_product_hunt:       { label: "Product Hunt Kit",    icon: "🚀" },
+  community_influencer_outreach:{ label: "Influencer Outreach", icon: "🎤" },
+  community_reddit_discord:     { label: "Reddit + Discord",    icon: "👾" },
+  community_pr_pitch:           { label: "PR Pitch",            icon: "📰" },
+  community_launch_x_thread:    { label: "Launch X Thread",     icon: "𝕏"  },
 };
 
 function getTypeInfo(type: string) {
@@ -462,6 +474,12 @@ export default function CampaignsPage() {
                   fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
                   padding: "8px 18px", borderRadius: 999, border: "1px solid #EEEEEE", cursor: "pointer",
                 }}>Copy</button>
+                <a href={`/dashboard/campaigns/${selected.id}/results`} style={{
+                  background: "#1F1F1F", color: "#FFFFFF",
+                  fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+                  padding: "8px 18px", borderRadius: 999, border: "none",
+                  textDecoration: "none", display: "inline-block",
+                }}>View Results 📊</a>
                 {selected.brand_kit_applied && (
                   <a
                     href={refreshHref(selected)}

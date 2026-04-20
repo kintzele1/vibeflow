@@ -10,7 +10,7 @@ const AGENTS: Agent[] = [
   { icon: "📧", name: "Email Marketing", desc: "Welcome, onboarding, upsell, re-engagement sequences + broadcasts.", status: "live", href: "/dashboard/email" },
   { icon: "📲", name: "ASO", desc: "App Store + Google Play titles, keywords, descriptions, screenshots, video scripts.", status: "live", href: "/dashboard/aso" },
   { icon: "📊", name: "Analytics", desc: "Unified GA4 dashboard, predictive ROI, automated recommendations.", status: "coming" },
-  { icon: "🚀", name: "Community & Launch", desc: "Product Hunt kits, influencer outreach, Discord/Reddit, PR pitches.", status: "coming" },
+  { icon: "🚀", name: "Community & Launch", desc: "Product Hunt kits, influencer outreach, Discord/Reddit, PR pitches, launch threads.", status: "live", href: "/dashboard/community" },
 ];
 
 export default function AgentsPage() {

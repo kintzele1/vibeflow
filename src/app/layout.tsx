@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, DM_Sans } from "next/font/google";
 import { Suspense } from "react";
-import { GoogleAnalytics } from "@next/third-parties/google";
+import Script from "next/script";
 import "./globals.css";
 import { PostHogProvider } from "@/components/providers/PostHogProvider";
 
@@ -51,7 +51,22 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <PostHogProvider>{children}</PostHogProvider>
         </Suspense>
-        {gaId && <GoogleAnalytics gaId={gaId} />}
+        {gaId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="ga4-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${gaId}');
+              `}
+            </Script>
+          </>
+        )}
       </body>
     </html>
   );

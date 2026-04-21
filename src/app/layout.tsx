@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, DM_Sans } from "next/font/google";
 import { Suspense } from "react";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { PostHogProvider } from "@/components/providers/PostHogProvider";
 
@@ -43,12 +44,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
   return (
     <html lang="en" className={`${outfit.variable} ${dmSans.variable}`}>
       <body className="antialiased">
         <Suspense fallback={null}>
           <PostHogProvider>{children}</PostHogProvider>
         </Suspense>
+        {gaId && <GoogleAnalytics gaId={gaId} />}
       </body>
     </html>
   );

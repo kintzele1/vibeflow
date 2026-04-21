@@ -269,30 +269,183 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
     if (!campaign) return;
     const doc = new jsPDF({ unit: "pt", format: "letter" }); // 612 x 792 pt
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const marginX = 48;
+    const contentW = pageWidth - marginX * 2;
     const primary = brand?.primary_color ?? "#05AD98";
     const [pr, pg, pb] = hexToRgb(primary);
+    const FOOTER_Y = pageHeight - 28;           // reserved footer zone
+    const BOTTOM_LIMIT = pageHeight - 48;       // when body Y exceeds this, new page
+
     let y = 60;
+
+    const ensureSpace = (needed: number) => {
+      if (y + needed > BOTTOM_LIMIT) {
+        doc.addPage();
+        y = 60;
+      }
+    };
+
+    // --- Helpers for rendering prose with inline **bold** runs ---
+    // jsPDF doesn't support rich text spans in a single call. To render mixed
+    // bold/regular, we split by **...** and emit segments side by side,
+    // wrapping manually based on width.
+    const renderInline = (text: string, startX: number, startY: number, width: number, lineHeight: number): number => {
+      // Tokenize into runs: { text, bold }
+      const runs: Array<{ text: string; bold: boolean }> = [];
+      const parts = text.split(/\*\*(.+?)\*\*/g);
+      parts.forEach((part, idx) => {
+        if (!part) return;
+        runs.push({ text: part, bold: idx % 2 === 1 });
+      });
+
+      let cursorX = startX;
+      let cursorY = startY;
+
+      const spaceW = doc.getTextWidth(" ");
+
+      for (const run of runs) {
+        doc.setFont("helvetica", run.bold ? "bold" : "normal");
+        // Break each run into words so we can wrap at word boundaries.
+        const words = run.text.split(/(\s+)/);
+        for (const word of words) {
+          if (!word) continue;
+          const wordW = doc.getTextWidth(word);
+          if (cursorX + wordW > startX + width) {
+            cursorY += lineHeight;
+            cursorX = startX;
+            if (cursorY > BOTTOM_LIMIT) {
+              doc.addPage();
+              cursorY = 60;
+            }
+            // Skip leading whitespace on new line
+            if (/^\s+$/.test(word)) continue;
+          }
+          doc.text(word, cursorX, cursorY);
+          cursorX += wordW;
+        }
+      }
+      doc.setFont("helvetica", "normal");
+      return cursorY;
+    };
+
+    // Render campaign markdown content with heading + bullet + divider handling
+    const renderMarkdown = (md: string) => {
+      const lines = md.split("\n");
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60);
+
+      for (let i = 0; i < lines.length; i++) {
+        const raw = lines[i];
+        const line = raw.trimEnd();
+
+        // Blank line — small gap
+        if (!line.trim()) {
+          y += 6;
+          continue;
+        }
+
+        // Horizontal rule
+        if (/^---+$/.test(line.trim())) {
+          ensureSpace(14);
+          y += 4;
+          doc.setDrawColor(230);
+          doc.line(marginX, y, pageWidth - marginX, y);
+          y += 10;
+          continue;
+        }
+
+        // H1 / H2 / H3
+        const hMatch = /^(#{1,3})\s+(.*)$/.exec(line);
+        if (hMatch) {
+          const level = hMatch[1].length;
+          const text = hMatch[2].trim();
+          const sizes: Record<number, number> = { 1: 15, 2: 13, 3: 11 };
+          const size = sizes[level];
+          ensureSpace(size + 12);
+          y += level === 1 ? 12 : 8;
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(size);
+          doc.setTextColor(31, 31, 31);
+          const wrapped = doc.splitTextToSize(text, contentW);
+          wrapped.forEach((wl: string) => {
+            ensureSpace(size + 2);
+            doc.text(wl, marginX, y);
+            y += size + 2;
+          });
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(10);
+          doc.setTextColor(60);
+          y += 4;
+          continue;
+        }
+
+        // Bullet (- or *)
+        const bMatch = /^\s*[-*]\s+(.*)$/.exec(line);
+        if (bMatch) {
+          const text = bMatch[1];
+          ensureSpace(14);
+          doc.setFontSize(10);
+          doc.setTextColor(60);
+          doc.text("•", marginX, y);
+          const endY = renderInline(text, marginX + 14, y, contentW - 14, 14);
+          y = endY + 14;
+          continue;
+        }
+
+        // Numbered list (1. 2. etc)
+        const nMatch = /^\s*(\d+)\.\s+(.*)$/.exec(line);
+        if (nMatch) {
+          const num = nMatch[1];
+          const text = nMatch[2];
+          ensureSpace(14);
+          doc.setFontSize(10);
+          doc.setTextColor(60);
+          doc.text(`${num}.`, marginX, y);
+          const endY = renderInline(text, marginX + 22, y, contentW - 22, 14);
+          y = endY + 14;
+          continue;
+        }
+
+        // Normal paragraph line — inline bold handling
+        ensureSpace(14);
+        doc.setFontSize(10);
+        doc.setTextColor(60);
+        const endY = renderInline(line, marginX, y, contentW, 14);
+        y = endY + 14;
+      }
+    };
 
     // Header accent bar
     doc.setFillColor(pr, pg, pb);
     doc.rect(0, 0, pageWidth, 8, "F");
 
-    // Brand + app name
+    // Top strip: brand on the left, export date on the right
     y = 44;
     doc.setFontSize(10);
     doc.setTextColor(120);
+    doc.setFont("helvetica", "normal");
     doc.text((brand?.app_name ?? "VibeFlow") + " — Campaign Results", marginX, y);
+    // Date pinned to the right edge
+    const exportDate = new Date().toLocaleDateString();
+    const dateW = doc.getTextWidth(exportDate);
+    doc.text(exportDate, pageWidth - marginX - dateW, y);
 
-    // Title
-    y += 34;
-    doc.setFontSize(22);
+    // Title — correctly advance Y based on how many lines the title wrapped into
+    y += 32;
+    doc.setFontSize(20);
     doc.setTextColor(31, 31, 31);
+    doc.setFont("helvetica", "bold");
     const titleText = campaign.title ?? "Campaign Results";
-    doc.text(doc.splitTextToSize(titleText, pageWidth - marginX * 2), marginX, y);
+    const titleLines = doc.splitTextToSize(titleText, contentW);
+    titleLines.forEach((line: string) => {
+      doc.text(line, marginX, y);
+      y += 24;
+    });
+    doc.setFont("helvetica", "normal");
 
-    // Meta line
-    y += 24;
+    // Meta line (no date — date lives in top-right now)
+    y += 4;
     doc.setFontSize(10);
     doc.setTextColor(135);
     const metaBits = [
@@ -301,24 +454,39 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
       campaign.scheduled_date ? `Scheduled: ${new Date(campaign.scheduled_date).toLocaleDateString()}` : null,
       campaign.brand_kit_applied ? "Brand Kit applied" : null,
       utmTag ? `UTM: ${utmTag}` : null,
-    ].filter(Boolean);
-    doc.text(metaBits.join("  ·  "), marginX, y);
+    ].filter(Boolean) as string[];
+    const metaWrapped = doc.splitTextToSize(metaBits.join("  ·  "), contentW);
+    metaWrapped.forEach((line: string) => {
+      doc.text(line, marginX, y);
+      y += 14;
+    });
 
     // Section: Metrics
-    y += 30;
+    y += 14;
+    ensureSpace(80);
     doc.setDrawColor(230);
     doc.line(marginX, y, pageWidth - marginX, y);
     y += 20;
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.setTextColor(31, 31, 31);
     doc.text("Metrics", marginX, y);
+    doc.setFont("helvetica", "normal");
 
     y += 18;
     doc.setFontSize(10);
     if (!metrics) {
       doc.setTextColor(170);
-      doc.text("No GA4 metrics available. Connect GA4 and tag this campaign with a UTM to populate.", marginX, y);
-      y += 16;
+      const lines = doc.splitTextToSize(
+        utmTag
+          ? `No data yet for utm_campaign=${utmTag}. Metrics will populate as GA4 records sessions against that tag.`
+          : "Add a UTM tag to this campaign and connect GA4 to populate these metrics.",
+        contentW,
+      );
+      lines.forEach((line: string) => {
+        doc.text(line, marginX, y);
+        y += 14;
+      });
     } else {
       const cards: Array<[string, string]> = [
         ["Sessions",     metrics.sessions.toLocaleString()],
@@ -328,72 +496,75 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
         ["Conversions",  metrics.conversions.toLocaleString()],
         ["Revenue",      formatCurrency(metrics.revenue)],
       ];
-      const colW = (pageWidth - marginX * 2) / 3;
+      const colW = contentW / 3;
+      ensureSpace(Math.ceil(cards.length / 3) * 54);
       cards.forEach(([label, value], idx) => {
         const col = idx % 3;
         const row = Math.floor(idx / 3);
         const cx = marginX + col * colW;
-        const cy = y + row * 50;
+        const cy = y + row * 52;
         doc.setDrawColor(230);
         doc.setFillColor(250, 250, 250);
-        doc.roundedRect(cx, cy, colW - 8, 42, 4, 4, "FD");
-        doc.setTextColor(170);
+        doc.roundedRect(cx, cy, colW - 10, 44, 4, 4, "FD");
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(150);
         doc.setFontSize(8);
-        doc.text(label.toUpperCase(), cx + 10, cy + 14);
+        doc.text(label.toUpperCase(), cx + 10, cy + 15);
+        doc.setFont("helvetica", "bold");
         doc.setTextColor(31, 31, 31);
         doc.setFontSize(14);
-        doc.text(value, cx + 10, cy + 32);
+        doc.text(value, cx + 10, cy + 34);
       });
-      y += Math.ceil(cards.length / 3) * 50 + 8;
+      y += Math.ceil(cards.length / 3) * 52 + 6;
+      doc.setFont("helvetica", "normal");
     }
 
     // Section: AI Narrative
     if (narrative) {
       y += 14;
+      ensureSpace(60);
       doc.setDrawColor(230);
       doc.line(marginX, y, pageWidth - marginX, y);
       y += 20;
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
       doc.setTextColor(31, 31, 31);
       doc.text("AI Narrative", marginX, y);
+      doc.setFont("helvetica", "normal");
       y += 18;
-      doc.setFontSize(10);
-      doc.setTextColor(60);
-      const wrapped = doc.splitTextToSize(narrative, pageWidth - marginX * 2);
-      // Pagination
-      wrapped.forEach((line: string) => {
-        if (y > 740) { doc.addPage(); y = 60; }
-        doc.text(line, marginX, y);
-        y += 14;
-      });
+      renderMarkdown(narrative);
     }
 
     // Section: Campaign Content
     y += 14;
-    if (y > 700) { doc.addPage(); y = 60; }
+    ensureSpace(40);
     doc.setDrawColor(230);
     doc.line(marginX, y, pageWidth - marginX, y);
     y += 20;
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.setTextColor(31, 31, 31);
     doc.text("Campaign Content", marginX, y);
+    doc.setFont("helvetica", "normal");
     y += 18;
-    doc.setFontSize(9);
-    doc.setTextColor(80);
-    const contentWrapped = doc.splitTextToSize(campaign.content, pageWidth - marginX * 2);
-    contentWrapped.forEach((line: string) => {
-      if (y > 740) { doc.addPage(); y = 60; }
-      doc.text(line, marginX, y);
-      y += 12;
-    });
+    renderMarkdown(campaign.content);
 
-    // Footer on every page
+    // Footer on every page — paint white rect first in case body text was drawn underneath
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, FOOTER_Y - 8, pageWidth, 40, "F");
+      doc.setDrawColor(240);
+      doc.line(marginX, FOOTER_Y - 8, pageWidth - marginX, FOOTER_Y - 8);
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(170);
-      doc.text(`Generated by VibeFlow Marketing · ${new Date().toLocaleDateString()} · Page ${i} of ${pageCount}`, marginX, 780);
+      doc.text(
+        `Generated by ${brand?.app_name ?? "VibeFlow Marketing"} · ${new Date().toLocaleDateString()} · Page ${i} of ${pageCount}`,
+        marginX,
+        FOOTER_Y + 6,
+      );
     }
 
     doc.save(`vibeflow-results-${campaign.content_type}-${Date.now()}.pdf`);

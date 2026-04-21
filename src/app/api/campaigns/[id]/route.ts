@@ -5,15 +5,30 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { completed } = await request.json();
+    const body = await request.json();
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response("Unauthorized", { status: 401 });
 
+    // Build a whitelist of updatable fields. Prevents clients from smuggling
+    // arbitrary columns (e.g. user_id, content) into the update.
+    const patch: Record<string, any> = {};
+    if (typeof body.completed === "boolean") patch.completed = body.completed;
+    if (typeof body.archived === "boolean")  patch.archived  = body.archived;
+    if (typeof body.utm_campaign_tag === "string" || body.utm_campaign_tag === null) {
+      patch.utm_campaign_tag = body.utm_campaign_tag;
+    }
+    if (Object.keys(patch).length === 0) {
+      return new Response(JSON.stringify({ error: "No updatable fields in body" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const { error } = await supabase
       .from("campaigns")
-      .update({ completed })
+      .update(patch)
       .eq("id", id)
       .eq("user_id", user.id);
 

@@ -11,6 +11,7 @@ type Campaign = {
   created_at: string;
   completed: boolean;
   brand_kit_applied: boolean | null;
+  archived: boolean | null;
 };
 
 // Maps a saved campaign's content_type to the agent page that can regenerate it.
@@ -137,12 +138,14 @@ function timeAgo(dateStr: string) {
   return `${days}d ago`;
 }
 
+type StatusFilter = "all" | "active" | "completed" | "archived";
+
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Campaign | null>(null);
   const [filter, setFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed">("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const supabase = createClient();
 
@@ -173,6 +176,22 @@ export default function CampaignsPage() {
     });
   }
 
+  async function handleToggleArchive(campaign: Campaign) {
+    const newValue = !campaign.archived;
+    setCampaigns(prev => prev.map(c => c.id === campaign.id ? { ...c, archived: newValue } : c));
+    if (selected?.id === campaign.id) {
+      // When archiving, collapse the detail panel so the list view comes back
+      if (newValue) setSelected(null);
+      else setSelected(prev => prev ? { ...prev, archived: newValue } : null);
+    }
+
+    await fetch(`/api/campaigns/${campaign.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ archived: newValue }),
+    });
+  }
+
   async function handleDelete(id: string) {
     await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
     setCampaigns(prev => prev.filter(c => c.id !== id));
@@ -191,19 +210,24 @@ export default function CampaignsPage() {
     URL.revokeObjectURL(url);
   }
 
-  const types = ["all", ...Array.from(new Set(campaigns.map(c => c.content_type)))];
+
+  const types = ["all", ...Array.from(new Set(campaigns.filter(c => !c.archived).map(c => c.content_type)))];
 
   const filtered = campaigns.filter(c => {
     const typeMatch = filter === "all" || c.content_type === filter;
     const statusMatch =
+      statusFilter === "archived" ? !!c.archived :
+      c.archived ? false :                              // hide archived from all/active/completed views
       statusFilter === "all" ? true :
       statusFilter === "completed" ? c.completed :
       !c.completed;
     return typeMatch && statusMatch;
   });
 
-  const completedCount = campaigns.filter(c => c.completed).length;
-  const activeCount = campaigns.filter(c => !c.completed).length;
+  const activeCampaigns = campaigns.filter(c => !c.archived);
+  const completedCount = activeCampaigns.filter(c => c.completed).length;
+  const activeCount = activeCampaigns.filter(c => !c.completed).length;
+  const archivedCount = campaigns.filter(c => c.archived).length;
 
   if (loading) {
     return (
@@ -278,7 +302,7 @@ export default function CampaignsPage() {
           </h1>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#878787" }}>
-              {campaigns.length} total
+              {activeCampaigns.length} total
             </span>
             <span style={{ color: "#DDDDDD" }}>·</span>
             <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#05AD98" }}>
@@ -288,6 +312,14 @@ export default function CampaignsPage() {
             <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#878787" }}>
               {completedCount} completed
             </span>
+            {archivedCount > 0 && (
+              <>
+                <span style={{ color: "#DDDDDD" }}>·</span>
+                <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#AAAAAA" }}>
+                  {archivedCount} archived
+                </span>
+              </>
+            )}
           </div>
         </div>
         <a href="/dashboard" style={{
@@ -323,8 +355,8 @@ export default function CampaignsPage() {
           {/* Left — list */}
           <div>
             {/* Status filter */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-              {(["all", "active", "completed"] as const).map(s => (
+            <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+              {(["all", "active", "completed", "archived"] as const).map(s => (
                 <button key={s} onClick={() => setStatusFilter(s)} style={{
                   fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
                   padding: "5px 12px", borderRadius: 999, border: "none", cursor: "pointer",
@@ -332,9 +364,10 @@ export default function CampaignsPage() {
                   color: statusFilter === s ? "#FFFFFF" : "#878787",
                   textTransform: "capitalize",
                 }}>
-                  {s === "all" ? `All (${campaigns.length})` :
-                   s === "active" ? `Active (${activeCount})` :
-                   `Completed (${completedCount})`}
+                  {s === "all"       ? `All (${activeCampaigns.length})` :
+                   s === "active"    ? `Active (${activeCount})` :
+                   s === "completed" ? `Completed (${completedCount})` :
+                                        `Archived (${archivedCount})`}
                 </button>
               ))}
             </div>
@@ -409,77 +442,97 @@ export default function CampaignsPage() {
             </div>
           </div>
 
-          {/* Right — detail */}
+          {/* Right — detail (minimal preview + prominent CTAs) */}
           {selected && (
             <div style={{
               background: "#FFFFFF", borderRadius: 20, border: "1.5px solid #EEEEEE",
               padding: "28px 32px", position: "sticky", top: 24,
-              maxHeight: "calc(100vh - 120px)", display: "flex", flexDirection: "column",
+              display: "flex", flexDirection: "column", gap: 20,
             }}>
-              {/* Detail header */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexShrink: 0 }}>
-                <span style={{ fontSize: 20 }}>{getTypeInfo(selected.content_type).icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 16, color: "#1F1F1F" }}>
-                    {getTypeInfo(selected.content_type).label}
+              {/* Header row */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <span style={{ fontSize: 22, lineHeight: 1 }}>{getTypeInfo(selected.content_type).icon}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+                    <span style={{
+                      fontFamily: "var(--font-dm-sans)", fontSize: 11, fontWeight: 500,
+                      padding: "2px 8px", borderRadius: 999,
+                      background: "#F0F0F0", color: "#878787",
+                    }}>{getTypeInfo(selected.content_type).label}</span>
+                    {selected.completed && (
+                      <span style={{
+                        fontFamily: "var(--font-dm-sans)", fontSize: 11, fontWeight: 500,
+                        padding: "2px 8px", borderRadius: 999,
+                        background: "#E6FAF8", color: "#05AD98",
+                      }}>✓ Complete</span>
+                    )}
+                    {selected.brand_kit_applied && (
+                      <span style={{
+                        fontFamily: "var(--font-dm-sans)", fontSize: 11, fontWeight: 500,
+                        padding: "2px 8px", borderRadius: 999,
+                        background: "#F0F5FF", color: "#4F5BEF",
+                      }}>✨ Brand Kit applied</span>
+                    )}
+                  </div>
+                  <div style={{
+                    fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 20,
+                    color: "#1F1F1F", letterSpacing: "-0.01em", lineHeight: 1.2, marginBottom: 6,
+                  }}>
+                    {selected.title ?? getTypeInfo(selected.content_type).label}
                   </div>
                   <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#AAAAAA" }}>
-                    {timeAgo(selected.created_at)}
+                    Generated {timeAgo(selected.created_at)}
                   </div>
                 </div>
-
-                {/* Complete toggle */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleToggleComplete(selected); }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 6,
-                    padding: "6px 14px", borderRadius: 999, border: "none", cursor: "pointer",
-                    background: selected.completed ? "#E6FAF8" : "#F0F0F0",
-                    color: selected.completed ? "#05AD98" : "#878787",
-                    fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {selected.completed ? "✓ Completed" : "Mark complete"}
-                </button>
-
-                <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#AAAAAA", fontSize: 20 }}>×</button>
+                <button onClick={() => setSelected(null)} style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "#AAAAAA", fontSize: 24, lineHeight: 1, padding: 0,
+                }}>×</button>
               </div>
 
-              {/* Prompt */}
-              <div style={{ background: "#F8F8F8", borderRadius: 10, padding: "12px 16px", marginBottom: 16, flexShrink: 0 }}>
-                <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 11, color: "#AAAAAA", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Prompt</div>
-                <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#555555", lineHeight: 1.5 }}>{selected.prompt}</div>
+              {/* Content preview — first paragraph, truncated */}
+              <div style={{ background: "#FAFAFA", borderRadius: 12, padding: "16px 18px" }}>
+                <div style={{
+                  fontFamily: "var(--font-dm-sans)", fontSize: 11,
+                  color: "#AAAAAA", marginBottom: 8,
+                  textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500,
+                }}>
+                  Preview
+                </div>
+                <div style={{
+                  fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#555555",
+                  lineHeight: 1.6, whiteSpace: "pre-wrap",
+                  display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}>
+                  {selected.content.replace(/^#+\s+/gm, "").replace(/\*\*/g, "").trim()}
+                </div>
+                <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 11, color: "#AAAAAA", marginTop: 8 }}>
+                  Full content available via View Results, Export, or Copy.
+                </div>
               </div>
 
-              {/* Content */}
-              <div style={{
-                flex: 1, overflowY: "auto",
-                fontFamily: "var(--font-dm-sans)", fontSize: 14,
-                color: "#333333", lineHeight: 1.8, whiteSpace: "pre-wrap",
-                marginBottom: 16,
+              {/* Primary CTA — Download content as a text file they can paste anywhere */}
+              <button onClick={() => handleExport(selected)} style={{
+                display: "block", width: "100%", textAlign: "center",
+                background: "#05AD98", color: "#FFFFFF",
+                fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 15,
+                padding: "14px 28px", borderRadius: 999, border: "none",
+                cursor: "pointer",
               }}>
-                {selected.content}
+                📥 Export Campaign
+              </button>
+              <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#AAAAAA", textAlign: "center", marginTop: -10 }}>
+                Downloads a .md file you can paste into any editor, CMS, or social tool.
               </div>
 
-              {/* Actions */}
-              <div style={{ display: "flex", gap: 10, flexShrink: 0, flexWrap: "wrap" }}>
-                <button onClick={() => handleExport(selected)} style={{
-                  background: "#05AD98", color: "#FFFFFF",
-                  fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
-                  padding: "8px 18px", borderRadius: 999, border: "none", cursor: "pointer",
-                }}>Export ↓</button>
+              {/* Secondary options */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button onClick={() => navigator.clipboard.writeText(selected.content)} style={{
                   background: "#F8F8F8", color: "#1F1F1F",
                   fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
-                  padding: "8px 18px", borderRadius: 999, border: "1px solid #EEEEEE", cursor: "pointer",
-                }}>Copy</button>
-                <a href={`/dashboard/campaigns/${selected.id}/results`} style={{
-                  background: "#1F1F1F", color: "#FFFFFF",
-                  fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
-                  padding: "8px 18px", borderRadius: 999, border: "none",
-                  textDecoration: "none", display: "inline-block",
-                }}>View Results 📊</a>
+                  padding: "8px 16px", borderRadius: 999, border: "1px solid #EEEEEE", cursor: "pointer",
+                }}>Copy to clipboard</button>
                 {selected.brand_kit_applied && (
                   <a
                     href={refreshHref(selected)}
@@ -487,18 +540,48 @@ export default function CampaignsPage() {
                     style={{
                       background: "#F0F5FF", color: "#4F5BEF",
                       fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
-                      padding: "8px 18px", borderRadius: 999,
+                      padding: "8px 16px", borderRadius: 999,
                       border: "none", cursor: "pointer", textDecoration: "none",
                       display: "inline-flex", alignItems: "center", gap: 6,
                     }}
-                  >✨ Refresh with latest brand</a>
+                  >✨ Refresh brand</a>
                 )}
+                <a href={`/dashboard/campaigns/${selected.id}/results`} style={{
+                  fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+                  padding: "8px 16px", color: "#878787", textDecoration: "none",
+                  marginLeft: "auto",
+                }}>
+                  View analytics →
+                </a>
+              </div>
+
+              {/* Divider */}
+              <div style={{ height: 1, background: "#F0F0F0" }} />
+
+              {/* Secondary actions row 2 — status management */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <button onClick={() => handleToggleComplete(selected)} style={{
+                  background: selected.completed ? "#E6FAF8" : "#F0F0F0",
+                  color: selected.completed ? "#05AD98" : "#878787",
+                  fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
+                  padding: "6px 14px", borderRadius: 999, border: "none", cursor: "pointer",
+                }}>
+                  {selected.completed ? "✓ Completed (click to undo)" : "Mark complete"}
+                </button>
+                <button onClick={() => handleToggleArchive(selected)} style={{
+                  background: selected.archived ? "#FFF3CD" : "#F0F0F0",
+                  color: selected.archived ? "#8B6000" : "#878787",
+                  fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
+                  padding: "6px 14px", borderRadius: 999, border: "none", cursor: "pointer",
+                }}>
+                  {selected.archived ? "📦 Unarchive" : "📦 Archive"}
+                </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setDeleteConfirm(selected.id); }}
                   style={{
                     background: "transparent", color: "#E24B4A",
-                    fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
-                    padding: "8px 18px", borderRadius: 999,
+                    fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 12,
+                    padding: "6px 14px", borderRadius: 999,
                     border: "1px solid rgba(226,75,74,0.2)", cursor: "pointer",
                     marginLeft: "auto",
                   }}

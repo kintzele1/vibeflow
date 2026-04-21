@@ -188,8 +188,16 @@ export default function IntegrationsPage() {
 
           {ga4.status === "needs_property" && (
             <div style={{ borderTop: "1px solid #EEEEEE", paddingTop: 20 }}>
-              <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, fontWeight: 500, color: "#1F1F1F", marginBottom: 10 }}>
-                Pick the property to connect
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, gap: 10, flexWrap: "wrap" }}>
+                <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, fontWeight: 500, color: "#1F1F1F" }}>
+                  Pick the property to connect
+                </div>
+                <button onClick={disconnect} disabled={disconnecting} style={{
+                  background: "transparent", color: "#E24B4A",
+                  fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 12,
+                  padding: "5px 12px", borderRadius: 999,
+                  border: "1px solid rgba(226,75,74,0.2)", cursor: disconnecting ? "not-allowed" : "pointer",
+                }}>{disconnecting ? "Resetting…" : "Reset / Reconnect"}</button>
               </div>
               {propertiesLoading ? (
                 <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787" }}>Loading your properties…</div>

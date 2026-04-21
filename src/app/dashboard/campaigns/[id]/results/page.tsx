@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, useRef, use } from "react";
 import { createClient } from "@/lib/supabase/client";
+import Papa from "papaparse";
+import { jsPDF } from "jspdf";
 
 type Campaign = {
   id: string;
@@ -12,6 +14,7 @@ type Campaign = {
   scheduled_date: string | null;
   completed: boolean;
   brand_kit_applied: boolean | null;
+  utm_campaign_tag: string | null;
 };
 
 type Metric = {
@@ -22,34 +25,53 @@ type Metric = {
   recorded_at: string;
 };
 
-// Map content_type → the agent route that regenerates it. Used for the "Optimize" actions.
-const AGENT_ROUTES: Record<string, { base: string; typeParam?: string; label: string }> = {
-  campaign:              { base: "/dashboard",              label: "Full Campaign" },
-  blog:                  { base: "/dashboard/content",      typeParam: "blog", label: "Blog Post" },
-  newsletter:            { base: "/dashboard/content",      typeParam: "newsletter", label: "Newsletter" },
-  twitter:               { base: "/dashboard/content",      typeParam: "twitter", label: "Twitter Thread" },
-  linkedin:              { base: "/dashboard/content",      typeParam: "linkedin", label: "LinkedIn Post" },
-  reddit:                { base: "/dashboard/content",      typeParam: "reddit", label: "Reddit Post" },
-  youtube:               { base: "/dashboard/content",      typeParam: "youtube", label: "YouTube Script" },
-  email_sequence:        { base: "/dashboard/content",      typeParam: "email_sequence", label: "Email Sequence" },
+type BrandKit = {
+  app_name: string;
+  tagline: string;
+  primary_color: string;
+  secondary_color: string;
+  logo_url: string | null;
+};
+
+type Ga4Metrics = {
+  sessions: number;
+  users: number;
+  engagement: number;
+  ctr: number;
+  conversions: number;
+  revenue: number;
 };
 
 const RELATED_AGENTS = [
-  { label: "Social Media",    href: "/dashboard/social",     desc: "Turn this into X, LinkedIn, Instagram, TikTok posts" },
-  { label: "Paid Ads",        href: "/dashboard/ppc",        desc: "Build a Google/Meta/LinkedIn ad campaign from this" },
-  { label: "Email Marketing", href: "/dashboard/email",      desc: "Spin this into a welcome or broadcast sequence" },
-  { label: "SEO",             href: "/dashboard/seo",        desc: "Turn this into keyword research or a content brief" },
+  { label: "Social Media",     href: "/dashboard/social",    desc: "Turn this into X, LinkedIn, Instagram, TikTok posts" },
+  { label: "Paid Ads",         href: "/dashboard/ppc",       desc: "Build a Google/Meta/LinkedIn ad campaign from this" },
+  { label: "Email Marketing",  href: "/dashboard/email",     desc: "Spin this into a welcome or broadcast sequence" },
+  { label: "SEO",              href: "/dashboard/seo",       desc: "Turn this into keyword research or a content brief" },
   { label: "Community & Launch", href: "/dashboard/community", desc: "Wrap this in a Product Hunt kit or launch X thread" },
 ];
+
+function formatCurrency(n: number): string {
+  if (n === 0) return "$0";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+}
 
 export default function ResultsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [metrics, setMetrics] = useState<Metric[]>([]);
+  const [brand, setBrand] = useState<BrandKit | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
+  // UTM tag + metrics
+  const [utmTag, setUtmTag] = useState("");
+  const [utmDraft, setUtmDraft] = useState("");
+  const [savingUtm, setSavingUtm] = useState(false);
+  const [metrics, setMetrics] = useState<Ga4Metrics | null>(null);
+  const [metricsState, setMetricsState] = useState<"idle" | "loading" | "not_connected" | "error" | "ready">("idle");
+  const [metricsError, setMetricsError] = useState("");
+
+  // AI narrative
   const [narrative, setNarrative] = useState("");
   const [narrativeLoading, setNarrativeLoading] = useState(false);
   const [narrativeDone, setNarrativeDone] = useState(false);
@@ -58,6 +80,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
 
   const supabase = createClient();
 
+  // Initial load: campaign + brand kit + kick off metrics fetch if UTM already set
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -65,22 +88,84 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
 
       const { data: c } = await supabase
         .from("campaigns")
-        .select("id, title, prompt, content, content_type, created_at, scheduled_date, completed, brand_kit_applied")
+        .select("id, title, prompt, content, content_type, created_at, scheduled_date, completed, brand_kit_applied, utm_campaign_tag")
         .eq("id", id)
         .eq("user_id", user.id)
         .single();
       if (!c) { setNotFound(true); setLoading(false); return; }
       setCampaign(c);
+      setUtmTag(c.utm_campaign_tag ?? "");
+      setUtmDraft(c.utm_campaign_tag ?? "");
 
-      const { data: m } = await supabase
-        .from("results_metrics")
-        .select("metric_type, value, value_text, source, recorded_at")
-        .eq("campaign_id", id)
-        .order("recorded_at", { ascending: false });
-      setMetrics(m ?? []);
+      // Brand kit for PDF export branding
+      fetch("/api/brand").then(r => r.json()).then(data => {
+        if (data.brand) setBrand(data.brand);
+      });
+
       setLoading(false);
+
+      // If a UTM tag is already saved, fetch metrics immediately
+      if (c.utm_campaign_tag) {
+        fetchMetrics(c.utm_campaign_tag);
+      }
     })();
   }, [id]);
+
+  async function fetchMetrics(tag: string) {
+    if (!tag) return;
+    setMetricsState("loading");
+    setMetricsError("");
+    try {
+      const res = await fetch("/api/integrations/ga4/campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaignId: id, utmCampaign: tag }),
+      });
+      if (res.status === 404 || res.status === 400) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === "not_connected" || data.error === "no_property") {
+          setMetricsState("not_connected");
+          return;
+        }
+        setMetricsState("error");
+        setMetricsError(data.error ?? "Couldn't load metrics");
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setMetricsState("error");
+        setMetricsError(data.error ?? `HTTP ${res.status}`);
+        return;
+      }
+      const data = await res.json();
+      setMetrics(data.metrics);
+      setMetricsState("ready");
+    } catch (err: any) {
+      setMetricsState("error");
+      setMetricsError(err.message ?? "Network error");
+    }
+  }
+
+  async function saveUtmTag() {
+    const normalized = utmDraft.trim();
+    if (normalized === utmTag) return;
+    setSavingUtm(true);
+    try {
+      const { error } = await supabase
+        .from("campaigns")
+        .update({ utm_campaign_tag: normalized || null })
+        .eq("id", id);
+      if (error) {
+        alert("Couldn't save UTM tag: " + error.message);
+        return;
+      }
+      setUtmTag(normalized);
+      if (normalized) fetchMetrics(normalized);
+      else { setMetrics(null); setMetricsState("idle"); }
+    } finally {
+      setSavingUtm(false);
+    }
+  }
 
   async function generateNarrative() {
     if (narrativeLoading) return;
@@ -95,7 +180,6 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ campaignId: id }),
       });
-
       if (res.status === 402) {
         const data = await res.json();
         setNarrativeError(data.message ?? "No searches remaining.");
@@ -107,11 +191,9 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
         setNarrativeLoading(false);
         return;
       }
-
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       if (!reader) { setNarrativeLoading(false); return; }
-
       while (true) {
         const { done: streamDone, value } = await reader.read();
         if (streamDone) break;
@@ -140,6 +222,183 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
     }
   }
 
+  function handleCsvExport() {
+    if (!campaign) return;
+    const rows: Array<Record<string, any>> = [
+      { section: "Campaign", field: "title", value: campaign.title ?? "" },
+      { section: "Campaign", field: "type", value: campaign.content_type },
+      { section: "Campaign", field: "created_at", value: campaign.created_at },
+      { section: "Campaign", field: "scheduled_date", value: campaign.scheduled_date ?? "" },
+      { section: "Campaign", field: "brand_kit_applied", value: campaign.brand_kit_applied ? "yes" : "no" },
+      { section: "Campaign", field: "utm_campaign_tag", value: utmTag || "" },
+      { section: "Campaign", field: "prompt", value: campaign.prompt },
+    ];
+    if (metrics) {
+      rows.push(
+        { section: "Metrics", field: "sessions",    value: metrics.sessions },
+        { section: "Metrics", field: "users",       value: metrics.users },
+        { section: "Metrics", field: "engagement",  value: metrics.engagement },
+        { section: "Metrics", field: "ctr_percent", value: metrics.ctr },
+        { section: "Metrics", field: "conversions", value: metrics.conversions },
+        { section: "Metrics", field: "revenue_usd", value: metrics.revenue },
+      );
+    }
+    if (narrative) {
+      rows.push({ section: "AI Narrative", field: "text", value: narrative });
+    }
+    rows.push({ section: "Content", field: "body", value: campaign.content });
+
+    const csv = Papa.unparse(rows);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vibeflow-results-${campaign.content_type}-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function hexToRgb(hex: string): [number, number, number] {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+    if (!m) return [5, 173, 152]; // fallback teal
+    const int = parseInt(m[1], 16);
+    return [(int >> 16) & 255, (int >> 8) & 255, int & 255];
+  }
+
+  function handlePdfExport() {
+    if (!campaign) return;
+    const doc = new jsPDF({ unit: "pt", format: "letter" }); // 612 x 792 pt
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const marginX = 48;
+    const primary = brand?.primary_color ?? "#05AD98";
+    const [pr, pg, pb] = hexToRgb(primary);
+    let y = 60;
+
+    // Header accent bar
+    doc.setFillColor(pr, pg, pb);
+    doc.rect(0, 0, pageWidth, 8, "F");
+
+    // Brand + app name
+    y = 44;
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    doc.text((brand?.app_name ?? "VibeFlow") + " — Campaign Results", marginX, y);
+
+    // Title
+    y += 34;
+    doc.setFontSize(22);
+    doc.setTextColor(31, 31, 31);
+    const titleText = campaign.title ?? "Campaign Results";
+    doc.text(doc.splitTextToSize(titleText, pageWidth - marginX * 2), marginX, y);
+
+    // Meta line
+    y += 24;
+    doc.setFontSize(10);
+    doc.setTextColor(135);
+    const metaBits = [
+      `Type: ${campaign.content_type}`,
+      `Created: ${new Date(campaign.created_at).toLocaleDateString()}`,
+      campaign.scheduled_date ? `Scheduled: ${new Date(campaign.scheduled_date).toLocaleDateString()}` : null,
+      campaign.brand_kit_applied ? "Brand Kit applied" : null,
+      utmTag ? `UTM: ${utmTag}` : null,
+    ].filter(Boolean);
+    doc.text(metaBits.join("  ·  "), marginX, y);
+
+    // Section: Metrics
+    y += 30;
+    doc.setDrawColor(230);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 20;
+    doc.setFontSize(14);
+    doc.setTextColor(31, 31, 31);
+    doc.text("Metrics", marginX, y);
+
+    y += 18;
+    doc.setFontSize(10);
+    if (!metrics) {
+      doc.setTextColor(170);
+      doc.text("No GA4 metrics available. Connect GA4 and tag this campaign with a UTM to populate.", marginX, y);
+      y += 16;
+    } else {
+      const cards: Array<[string, string]> = [
+        ["Sessions",     metrics.sessions.toLocaleString()],
+        ["Users",        metrics.users.toLocaleString()],
+        ["Engagement",   metrics.engagement.toLocaleString()],
+        ["CTR",          `${metrics.ctr}%`],
+        ["Conversions",  metrics.conversions.toLocaleString()],
+        ["Revenue",      formatCurrency(metrics.revenue)],
+      ];
+      const colW = (pageWidth - marginX * 2) / 3;
+      cards.forEach(([label, value], idx) => {
+        const col = idx % 3;
+        const row = Math.floor(idx / 3);
+        const cx = marginX + col * colW;
+        const cy = y + row * 50;
+        doc.setDrawColor(230);
+        doc.setFillColor(250, 250, 250);
+        doc.roundedRect(cx, cy, colW - 8, 42, 4, 4, "FD");
+        doc.setTextColor(170);
+        doc.setFontSize(8);
+        doc.text(label.toUpperCase(), cx + 10, cy + 14);
+        doc.setTextColor(31, 31, 31);
+        doc.setFontSize(14);
+        doc.text(value, cx + 10, cy + 32);
+      });
+      y += Math.ceil(cards.length / 3) * 50 + 8;
+    }
+
+    // Section: AI Narrative
+    if (narrative) {
+      y += 14;
+      doc.setDrawColor(230);
+      doc.line(marginX, y, pageWidth - marginX, y);
+      y += 20;
+      doc.setFontSize(14);
+      doc.setTextColor(31, 31, 31);
+      doc.text("AI Narrative", marginX, y);
+      y += 18;
+      doc.setFontSize(10);
+      doc.setTextColor(60);
+      const wrapped = doc.splitTextToSize(narrative, pageWidth - marginX * 2);
+      // Pagination
+      wrapped.forEach((line: string) => {
+        if (y > 740) { doc.addPage(); y = 60; }
+        doc.text(line, marginX, y);
+        y += 14;
+      });
+    }
+
+    // Section: Campaign Content
+    y += 14;
+    if (y > 700) { doc.addPage(); y = 60; }
+    doc.setDrawColor(230);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 20;
+    doc.setFontSize(14);
+    doc.setTextColor(31, 31, 31);
+    doc.text("Campaign Content", marginX, y);
+    y += 18;
+    doc.setFontSize(9);
+    doc.setTextColor(80);
+    const contentWrapped = doc.splitTextToSize(campaign.content, pageWidth - marginX * 2);
+    contentWrapped.forEach((line: string) => {
+      if (y > 740) { doc.addPage(); y = 60; }
+      doc.text(line, marginX, y);
+      y += 12;
+    });
+
+    // Footer on every page
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(170);
+      doc.text(`Generated by VibeFlow Marketing · ${new Date().toLocaleDateString()} · Page ${i} of ${pageCount}`, marginX, 780);
+    }
+
+    doc.save(`vibeflow-results-${campaign.content_type}-${Date.now()}.pdf`);
+  }
+
   if (loading) {
     return (
       <div style={{ padding: "40px 48px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400 }}>
@@ -156,9 +415,6 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
         <h2 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 24, color: "#1F1F1F", marginBottom: 12 }}>
           Campaign not found
         </h2>
-        <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 15, color: "#878787", marginBottom: 28 }}>
-          It may have been deleted, or you don't have access to it.
-        </p>
         <a href="/dashboard/campaigns" style={{
           background: "#05AD98", color: "#FFFFFF",
           fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 15,
@@ -168,81 +424,115 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
     );
   }
 
-  const metricsConnected = metrics.length > 0;
-
   return (
     <div style={{ padding: "40px 48px", maxWidth: 1100, margin: "0 auto" }}>
 
       {/* Breadcrumb */}
       <div style={{ marginBottom: 16 }}>
-        <a href="/dashboard/campaigns" style={{
-          fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", textDecoration: "none",
-        }}>← My Campaigns</a>
+        <a href="/dashboard/campaigns" style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", textDecoration: "none" }}>← My Campaigns</a>
       </div>
 
-      {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 32, color: "#1F1F1F", letterSpacing: "-0.02em", marginBottom: 8 }}>
-          {campaign.title ?? "Campaign Results"} 📊
-        </h1>
-        <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 15, color: "#878787", lineHeight: 1.6 }}>
-          Created {new Date(campaign.created_at).toLocaleDateString()} · {campaign.content_type} · {campaign.brand_kit_applied ? "Brand Kit applied" : "No Brand Kit"}
+      {/* Header + export buttons */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 32, flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 32, color: "#1F1F1F", letterSpacing: "-0.02em", marginBottom: 8 }}>
+            {campaign.title ?? "Campaign Results"} 📊
+          </h1>
+          <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 15, color: "#878787", lineHeight: 1.6 }}>
+            Created {new Date(campaign.created_at).toLocaleDateString()} · {campaign.content_type} · {campaign.brand_kit_applied ? "Brand Kit applied" : "No Brand Kit"}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={handleCsvExport} style={{
+            background: "#F8F8F8", color: "#1F1F1F",
+            fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+            padding: "8px 16px", borderRadius: 999, border: "1px solid #EEEEEE", cursor: "pointer",
+          }}>Export CSV ↓</button>
+          <button onClick={handlePdfExport} style={{
+            background: "#1F1F1F", color: "#FFFFFF",
+            fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+            padding: "8px 16px", borderRadius: 999, border: "none", cursor: "pointer",
+          }}>Export PDF ↓</button>
+        </div>
+      </div>
+
+      {/* UTM tag input */}
+      <div style={{
+        background: "#FFFFFF", borderRadius: 16, border: "1.5px solid #EEEEEE",
+        padding: "20px 24px", marginBottom: 24,
+      }}>
+        <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500, color: "#AAAAAA", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
+          Track this campaign in GA4
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 240, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#AAAAAA" }}>utm_campaign=</span>
+            <input
+              type="text"
+              value={utmDraft}
+              onChange={e => setUtmDraft(e.target.value.replace(/\s+/g, "_"))}
+              placeholder="vibeflow_launch_mar26"
+              style={{
+                flex: 1, padding: "10px 14px", borderRadius: 10,
+                border: "1.5px solid #EEEEEE", fontFamily: "var(--font-dm-sans)",
+                fontSize: 14, color: "#1F1F1F", outline: "none", minWidth: 0,
+              }}
+            />
+          </div>
+          <button onClick={saveUtmTag} disabled={savingUtm || utmDraft.trim() === utmTag} style={{
+            background: utmDraft.trim() === utmTag ? "#F0F0F0" : "#05AD98",
+            color: utmDraft.trim() === utmTag ? "#AAAAAA" : "#FFFFFF",
+            fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+            padding: "10px 20px", borderRadius: 999, border: "none",
+            cursor: savingUtm || utmDraft.trim() === utmTag ? "not-allowed" : "pointer",
+          }}>
+            {savingUtm ? "Saving…" : utmTag ? "Update" : "Save + Fetch"}
+          </button>
+        </div>
+        <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#878787", marginTop: 10, lineHeight: 1.6 }}>
+          Add this tag to every link you share for this campaign (e.g., <code style={{ background: "#F0F0F0", padding: "1px 6px", borderRadius: 4 }}>yoursite.com/?utm_campaign={utmTag || "your_tag"}&utm_source=twitter</code>). We'll pull matching GA4 sessions every 5 min.
         </p>
       </div>
 
       {/* Overview — metric cards */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 18, color: "#1F1F1F", marginBottom: 14 }}>Overview</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
-          {[
-            { label: "Reach",      key: "reach" },
-            { label: "Engagement", key: "engagement" },
-            { label: "CTR",        key: "ctr" },
-            { label: "Conversions", key: "conversions" },
-            { label: "Revenue",    key: "revenue" },
-          ].map(card => {
-            const found = metrics.find(m => m.metric_type === card.key);
-            const displayValue = found
-              ? (found.value !== null ? found.value.toLocaleString() : found.value_text ?? "—")
-              : "—";
-            return (
-              <div key={card.key} style={{
-                background: "#FFFFFF", borderRadius: 16, padding: "20px",
-                border: "1px solid #EEEEEE",
-              }}>
-                <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#AAAAAA", marginBottom: 8 }}>
-                  {card.label}
-                </div>
-                <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 28, color: "#1F1F1F", marginBottom: 4 }}>
-                  {displayValue}
-                </div>
-                <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 11, color: "#AAAAAA" }}>
-                  {found ? `Source: ${found.source ?? "unknown"}` : "Awaiting GA4"}
-                </div>
-              </div>
-            );
-          })}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+          <ResultCard label="Sessions"    value={metrics?.sessions?.toLocaleString()    ?? "—"} state={metricsState} />
+          <ResultCard label="Users"       value={metrics?.users?.toLocaleString()       ?? "—"} state={metricsState} />
+          <ResultCard label="Engagement"  value={metrics?.engagement?.toLocaleString()  ?? "—"} state={metricsState} />
+          <ResultCard label="CTR"         value={metrics ? `${metrics.ctr}%` : "—"}              state={metricsState} />
+          <ResultCard label="Conversions" value={metrics?.conversions?.toLocaleString() ?? "—"} state={metricsState} />
+          <ResultCard label="Revenue"     value={metrics ? formatCurrency(metrics.revenue) : "—"} state={metricsState} />
         </div>
 
-        {!metricsConnected && (
+        {metricsState === "not_connected" && (
           <div style={{
-            marginTop: 16,
-            background: "#FAFAFA", borderRadius: 16,
-            border: "1.5px dashed #DDDDDD",
-            padding: "28px 24px", textAlign: "center",
+            marginTop: 16, background: "#FAFAFA", borderRadius: 16,
+            border: "1.5px dashed #DDDDDD", padding: "24px", textAlign: "center",
           }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>📡</div>
-            <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 16, color: "#1F1F1F", marginBottom: 6 }}>
-              Connect Google Analytics 4 to see real numbers
+            <div style={{ fontSize: 28, marginBottom: 10 }}>📡</div>
+            <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 15, color: "#1F1F1F", marginBottom: 6 }}>
+              Connect GA4 to see real numbers
             </div>
-            <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", maxWidth: 420, margin: "0 auto 16px", lineHeight: 1.6 }}>
-              GA4 integration goes live shortly. Until then, the AI narrative below still reads your campaign content and scheduling to give you a strategic take.
+            <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", maxWidth: 420, margin: "0 auto 14px", lineHeight: 1.6 }}>
+              Tag your links + connect Google Analytics 4 and this section populates automatically.
             </p>
             <a href="/dashboard/integrations" style={{
               background: "#05AD98", color: "#FFFFFF",
               fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
               padding: "8px 20px", borderRadius: 999, textDecoration: "none", display: "inline-block",
             }}>Connect GA4 →</a>
+          </div>
+        )}
+
+        {metricsState === "error" && (
+          <div style={{
+            marginTop: 16, background: "#FEF2F2", border: "1px solid rgba(226,75,74,0.2)",
+            borderRadius: 12, padding: "12px 16px",
+            fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#E24B4A",
+          }}>
+            Couldn't fetch GA4 metrics: {metricsError}
           </div>
         )}
       </div>
@@ -265,20 +555,13 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
             background: "#FEF2F2", border: "1px solid rgba(226,75,74,0.2)",
             borderRadius: 12, padding: "12px 16px", marginBottom: 16,
             fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#E24B4A",
-          }}>
-            {narrativeError}
-          </div>
+          }}>{narrativeError}</div>
         )}
 
         {!narrative && !narrativeLoading && !narrativeError && (
-          <div style={{
-            background: "#FFFFFF", borderRadius: 16,
-            border: "1px solid #EEEEEE", padding: "28px",
-            textAlign: "center",
-          }}>
+          <div style={{ background: "#FFFFFF", borderRadius: 16, border: "1px solid #EEEEEE", padding: "28px", textAlign: "center" }}>
             <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#878787", maxWidth: 460, margin: "0 auto", lineHeight: 1.6 }}>
-              Click <strong>Generate insight</strong> to get a narrative read on this campaign —
-              what's working, what isn't, and the single next best action. Updates as your metrics grow.
+              Click <strong>Generate insight</strong> for a narrative read on this campaign — what's working, what isn't, and the single next best action.
             </p>
           </div>
         )}
@@ -306,7 +589,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
         )}
       </div>
 
-      {/* Optimize this campaign — related actions */}
+      {/* Optimize this campaign */}
       <div style={{ marginBottom: 32 }}>
         <h2 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 18, color: "#1F1F1F", marginBottom: 6 }}>
           Optimize this campaign
@@ -336,24 +619,29 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
         </div>
       </div>
 
-      {/* Historical comparison — shell */}
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 18, color: "#1F1F1F", marginBottom: 14 }}>
-          Historical comparison
-        </h2>
-        <div style={{
-          background: "#FAFAFA", borderRadius: 16,
-          border: "1.5px dashed #DDDDDD",
-          padding: "28px 24px", textAlign: "center",
-        }}>
-          <div style={{ fontSize: 28, marginBottom: 10 }}>📈</div>
-          <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 15, color: "#1F1F1F", marginBottom: 6 }}>
-            Comparison coming once GA4 is connected
-          </div>
-          <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", maxWidth: 440, margin: "0 auto", lineHeight: 1.6 }}>
-            After two or more campaigns have metrics, this section will show how this one stacks up — by channel, by timing, by brand consistency.
-          </p>
-        </div>
+    </div>
+  );
+}
+
+function ResultCard({ label, value, state }: { label: string; value: string; state: string }) {
+  const showLoading = state === "loading";
+  return (
+    <div style={{
+      background: "#FFFFFF", borderRadius: 16, padding: "20px",
+      border: "1px solid #EEEEEE", position: "relative",
+    }}>
+      <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#AAAAAA", marginBottom: 8 }}>
+        {label}
+      </div>
+      <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 26, color: "#1F1F1F", marginBottom: 4, letterSpacing: "-0.01em" }}>
+        {showLoading ? "…" : value}
+      </div>
+      <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 11, color: "#AAAAAA" }}>
+        {state === "ready"          && "From GA4"}
+        {state === "loading"        && "Fetching from GA4…"}
+        {state === "not_connected"  && "Connect GA4"}
+        {state === "error"          && "Error"}
+        {state === "idle"           && "Add UTM tag above"}
       </div>
     </div>
   );

@@ -57,6 +57,10 @@ const CONTENT_TYPE_ROUTES: Record<string, string> = {
   community_reddit_discord:      "/dashboard/community",
   community_pr_pitch:            "/dashboard/community",
   community_launch_x_thread:     "/dashboard/community",
+  affiliate_program_setup:       "/dashboard/affiliate",
+  affiliate_recruitment:         "/dashboard/affiliate",
+  affiliate_asset_kit:           "/dashboard/affiliate",
+  affiliate_performance_report:  "/dashboard/affiliate",
 };
 
 function refreshHref(campaign: Campaign): string {
@@ -77,6 +81,8 @@ function refreshHref(campaign: Campaign): string {
     params.set("type", campaign.content_type.replace(/^aso_/, ""));
   } else if (base === "/dashboard/community") {
     params.set("type", campaign.content_type.replace(/^community_/, ""));
+  } else if (base === "/dashboard/affiliate") {
+    params.set("type", campaign.content_type.replace(/^affiliate_/, ""));
   }
   return `${base}?${params.toString()}`;
 }
@@ -122,6 +128,10 @@ const TYPE_LABELS: Record<string, { label: string; icon: string }> = {
   community_reddit_discord:     { label: "Reddit + Discord",    icon: "👾" },
   community_pr_pitch:           { label: "PR Pitch",            icon: "📰" },
   community_launch_x_thread:    { label: "Launch X Thread",     icon: "𝕏"  },
+  affiliate_program_setup:      { label: "Affiliate Program",   icon: "🤝" },
+  affiliate_recruitment:        { label: "Partner Recruitment", icon: "🎯" },
+  affiliate_asset_kit:          { label: "Affiliate Asset Kit", icon: "🎁" },
+  affiliate_performance_report: { label: "Affiliate Performance", icon: "📈" },
 };
 
 function getTypeInfo(type: string) {

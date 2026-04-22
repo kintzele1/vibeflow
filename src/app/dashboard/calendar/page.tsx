@@ -1,14 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { platformOf, composerInfo, composerUrl } from "@/lib/platforms";
 
 type Campaign = {
   id: string;
   title: string | null;
   prompt: string;
+  content: string;
   content_type: string;
   scheduled_date: string | null;
   completed: boolean;
+};
+
+type SuggestedTime = {
+  day_of_week: string;
+  time_of_day: string;
+  confidence: "high" | "medium" | "low";
+  rationale: string;
 };
 
 const TYPE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
@@ -78,6 +87,9 @@ export default function CalendarPage() {
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "completed">("all");
   const [hoverDate, setHoverDate] = useState<string | null>(null);
+  const [suggestingId, setSuggestingId] = useState<string | null>(null);
+  const [suggestionFor, setSuggestionFor] = useState<{ id: string; data: SuggestedTime } | null>(null);
+  const [copyToast, setCopyToast] = useState<string>("");
   const supabase = createClient();
 
   useEffect(() => { fetchCampaigns(); }, []);
@@ -87,11 +99,60 @@ export default function CalendarPage() {
     if (!user) return;
     const { data } = await supabase
       .from("campaigns")
-      .select("id, title, prompt, content_type, scheduled_date, completed")
+      .select("id, title, prompt, content, content_type, scheduled_date, completed")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     setCampaigns(data ?? []);
     setLoading(false);
+  }
+
+  async function handleCopyToComposer(campaign: Campaign) {
+    const platform = platformOf(campaign.content_type);
+    const info = composerInfo(platform);
+    const title = campaign.title ?? undefined;
+
+    // Always copy to clipboard first, regardless of prefill support.
+    try {
+      await navigator.clipboard.writeText(campaign.content);
+    } catch {
+      // Older browsers may block writeText without user gesture on some pages;
+      // still proceed with the open step.
+    }
+
+    const url = composerUrl(platform, campaign.content, title);
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+
+    const msg = info.supportsPrefill
+      ? `Copied — and ${info.platformName} composer opened prefilled.`
+      : `Copied. ${info.platformName} opened — paste with Cmd/Ctrl+V.`;
+    setCopyToast(msg);
+    setTimeout(() => setCopyToast(""), 4000);
+  }
+
+  async function handleSuggestTime(campaign: Campaign) {
+    setSuggestingId(campaign.id);
+    try {
+      const res = await fetch("/api/calendar/suggest-time", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaignId: campaign.id }),
+      });
+      if (!res.ok) {
+        setCopyToast("Couldn't get a suggestion. Try again.");
+        setTimeout(() => setCopyToast(""), 3000);
+        return;
+      }
+      const data: SuggestedTime = await res.json();
+      setSuggestionFor({ id: campaign.id, data });
+    } finally {
+      setSuggestingId(null);
+    }
+  }
+
+  function handleExport(format: "csv" | "ics") {
+    window.location.href = `/api/calendar/export?format=${format}`;
   }
 
   async function handleSchedule(id: string, date: string | null) {
@@ -224,20 +285,86 @@ export default function CalendarPage() {
           </p>
         </div>
 
-        {/* View toggle */}
-        <div style={{ display: "flex", background: "#F0F0F0", borderRadius: 10, padding: 3, gap: 2 }}>
-          {(["month", "week"] as const).map(v => (
-            <button key={v} onClick={() => setView(v)} style={{
-              padding: "7px 18px", borderRadius: 8, border: "none", cursor: "pointer",
-              background: view === v ? "#FFFFFF" : "transparent",
-              fontFamily: "var(--font-dm-sans)", fontSize: 13, fontWeight: 500,
-              color: view === v ? "#1F1F1F" : "#878787",
-              boxShadow: view === v ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-              textTransform: "capitalize",
-            }}>{v}</button>
-          ))}
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          {/* Export menu */}
+          <button onClick={() => handleExport("csv")} disabled={scheduled.length === 0} style={{
+            background: "#F8F8F8", color: scheduled.length === 0 ? "#CCCCCC" : "#1F1F1F",
+            fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+            padding: "8px 16px", borderRadius: 999, border: "1px solid #EEEEEE",
+            cursor: scheduled.length === 0 ? "not-allowed" : "pointer",
+          }}>Export CSV</button>
+          <button onClick={() => handleExport("ics")} disabled={scheduled.length === 0} style={{
+            background: "#F8F8F8", color: scheduled.length === 0 ? "#CCCCCC" : "#1F1F1F",
+            fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+            padding: "8px 16px", borderRadius: 999, border: "1px solid #EEEEEE",
+            cursor: scheduled.length === 0 ? "not-allowed" : "pointer",
+          }} title="Import into Google / Apple / Outlook calendar">Export .ics</button>
+
+          {/* View toggle */}
+          <div style={{ display: "flex", background: "#F0F0F0", borderRadius: 10, padding: 3, gap: 2 }}>
+            {(["month", "week"] as const).map(v => (
+              <button key={v} onClick={() => setView(v)} style={{
+                padding: "7px 18px", borderRadius: 8, border: "none", cursor: "pointer",
+                background: view === v ? "#FFFFFF" : "transparent",
+                fontFamily: "var(--font-dm-sans)", fontSize: 13, fontWeight: 500,
+                color: view === v ? "#1F1F1F" : "#878787",
+                boxShadow: view === v ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                textTransform: "capitalize",
+              }}>{v}</button>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Copy toast */}
+      {copyToast && (
+        <div style={{
+          position: "fixed", top: 24, right: 24, zIndex: 2000,
+          background: "#1F1F1F", color: "#FFFFFF",
+          padding: "12px 20px", borderRadius: 12,
+          fontFamily: "var(--font-dm-sans)", fontSize: 14,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+          maxWidth: 360,
+        }}>{copyToast}</div>
+      )}
+
+      {/* Suggested-time modal */}
+      {suggestionFor && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1500,
+        }}>
+          <div style={{
+            background: "#FFFFFF", borderRadius: 20, padding: "28px 32px",
+            maxWidth: 460, width: "100%", margin: "0 24px",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.15)",
+          }}>
+            <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}>⏰</div>
+            <h3 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 20, color: "#1F1F1F", textAlign: "center", marginBottom: 6 }}>
+              Suggested posting time
+            </h3>
+            <div style={{ textAlign: "center", marginBottom: 16 }}>
+              <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 28, color: "#05AD98", marginBottom: 4 }}>
+                {suggestionFor.data.day_of_week} · {suggestionFor.data.time_of_day}
+              </div>
+              <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#AAAAAA", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                Confidence: {suggestionFor.data.confidence}
+              </div>
+            </div>
+            <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#555555", textAlign: "center", lineHeight: 1.6, marginBottom: 20 }}>
+              {suggestionFor.data.rationale}
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setSuggestionFor(null)} style={{
+                flex: 1, padding: "12px", borderRadius: 10,
+                border: "1.5px solid #EEEEEE", background: "#FFFFFF",
+                fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
+                color: "#878787", cursor: "pointer",
+              }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
@@ -382,17 +509,40 @@ export default function CalendarPage() {
                     }}>
                       {c.prompt}
                     </div>
-                    <button
-                      onClick={() => setSchedulingId(c.id)}
-                      style={{
-                        width: "100%", padding: "7px", borderRadius: 8,
-                        border: "1.5px solid #05AD98", background: "transparent",
-                        fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
-                        color: "#05AD98", cursor: "pointer",
-                      }}
-                    >
-                      + Schedule
-                    </button>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => setSchedulingId(c.id)}
+                        style={{
+                          flex: 1, padding: "7px", borderRadius: 8,
+                          border: "1.5px solid #05AD98", background: "transparent",
+                          fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
+                          color: "#05AD98", cursor: "pointer", minWidth: 100,
+                        }}
+                      >
+                        + Schedule
+                      </button>
+                      <button
+                        onClick={() => handleCopyToComposer(c)}
+                        title={composerInfo(platformOf(c.content_type)).buttonLabel}
+                        style={{
+                          padding: "7px 10px", borderRadius: 8,
+                          border: "1px solid #EEEEEE", background: "#F8F8F8",
+                          fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#555",
+                          cursor: "pointer",
+                        }}
+                      >📋</button>
+                      <button
+                        onClick={() => handleSuggestTime(c)}
+                        disabled={suggestingId === c.id}
+                        title="Suggest best posting time"
+                        style={{
+                          padding: "7px 10px", borderRadius: 8,
+                          border: "1px solid #EEEEEE", background: "#F8F8F8",
+                          fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#555",
+                          cursor: suggestingId === c.id ? "not-allowed" : "pointer",
+                        }}
+                      >{suggestingId === c.id ? "…" : "⏰"}</button>
+                    </div>
                   </div>
                 );
               })}
@@ -435,8 +585,20 @@ export default function CalendarPage() {
                           flex: 1, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
                         }}>{info.label}</span>
                         <button
+                          onClick={() => handleCopyToComposer(c)}
+                          title={composerInfo(platformOf(c.content_type)).buttonLabel}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#AAAAAA", fontSize: 13, padding: 2 }}
+                        >📋</button>
+                        <button
+                          onClick={() => handleSuggestTime(c)}
+                          disabled={suggestingId === c.id}
+                          title="Suggest best posting time"
+                          style={{ background: "none", border: "none", cursor: suggestingId === c.id ? "not-allowed" : "pointer", color: "#AAAAAA", fontSize: 13, padding: 2 }}
+                        >{suggestingId === c.id ? "…" : "⏰"}</button>
+                        <button
                           onClick={() => setSchedulingId(c.id)}
-                          style={{ background: "none", border: "none", cursor: "pointer", color: "#AAAAAA", fontSize: 14 }}
+                          title="Reschedule"
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#AAAAAA", fontSize: 14, padding: 2 }}
                         >✎</button>
                       </div>
                     );

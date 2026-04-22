@@ -2,14 +2,106 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getBrandKit, formatBrandKitForPrompt } from "@/lib/brand";
 
+// Hard platform character limits. Injected into every prompt so the model
+// doesn't generate content the user physically can't publish.
+const PLATFORM_LIMITS_PREAMBLE = `CRITICAL — PLATFORM CHARACTER LIMITS ARE HARD CAPS:
+- You MUST count characters and keep every output within the stated limit for its platform.
+- If a draft exceeds the limit, REWRITE before outputting — do not ship over-limit content.
+- Hashtags, emoji, line breaks all count. URLs count as their full length.
+- At the end of each post or caption, include a line in this exact format: "(xxx / LIMIT chars)"
+  where xxx is the true character count including hashtags and emoji. This lets the user verify.
+
+`;
+
 const SOCIAL_TYPES = {
-  x_post:         { label: "X Posts",         prompt: (app: string) => `Write 3 standalone X posts for this app: ${app}\n\nEach under 280 chars, different angles (problem/benefit/social proof), 2-3 hashtags, human not corporate. Label POST 1, POST 2, POST 3.` },
-  linkedin_posts: { label: "LinkedIn Posts",   prompt: (app: string) => `Write 3 LinkedIn posts for this app: ${app}\n\nPOST 1 - Founder story. POST 2 - Problem/solution. POST 3 - Results/value. Each: scroll-stopping first line, 150-250 words, end with CTA.` },
-  instagram:      { label: "Instagram",        prompt: (app: string) => `Write 3 Instagram captions for this app: ${app}\n\nCAPTION 1 - Launch announcement. CAPTION 2 - Behind the scenes. CAPTION 3 - User benefit. Each: caption + 15-20 hashtags + emoji suggestions.` },
-  tiktok:         { label: "TikTok Scripts",   prompt: (app: string) => `Write 3 TikTok scripts for this app: ${app}\n\nSCRIPT 1 - POV format (15-30s). SCRIPT 2 - Tutorial (30-60s). SCRIPT 3 - Storytime (30-60s). Each: [HOOK], [VISUAL], [VOICEOVER], [CTA], music style.` },
-  reddit_posts:   { label: "Reddit Posts",     prompt: (app: string) => `Write 3 Reddit posts for this app: ${app}\n\nPOST 1 - r/SideProject builder story. POST 2 - r/IndieHackers Show HN style. POST 3 - Niche subreddit value-first. No hype, real person.` },
-  threads:        { label: "Threads Posts",    prompt: (app: string) => `Write 5 Threads posts for this app: ${app}\n\nPOST 1 - Hot take. POST 2 - Behind the scenes. POST 3 - Relatable moment. POST 4 - Plain English explanation. POST 5 - Engagement question. 1-4 sentences each, no hashtags.` },
-  carousel:       { label: "Carousel Post",    prompt: (app: string) => `Write a 7-slide carousel for this app: ${app}\n\nSLIDE 1 - Hook. SLIDE 2 - Problem. SLIDE 3 - Why existing solutions fail. SLIDE 4 - Solution. SLIDE 5 - Feature 1. SLIDE 6 - Feature 2 + proof. SLIDE 7 - CTA. Each: headline (under 10 words) + body (2-3 sentences) + visual suggestion.` },
+  x_post: { label: "X Posts", prompt: (app: string) => `${PLATFORM_LIMITS_PREAMBLE}Write 3 standalone X posts for this app: ${app}
+
+PLATFORM: X (Twitter)
+HARD LIMIT: 280 characters per post — INCLUDING hashtags, handles, emoji.
+
+Each post: different angles (problem / benefit / social proof), 2-3 hashtags, human not corporate voice.
+Label each POST 1, POST 2, POST 3. After each, include the char count line as instructed.` },
+
+  linkedin_posts: { label: "LinkedIn Posts", prompt: (app: string) => `${PLATFORM_LIMITS_PREAMBLE}Write 3 LinkedIn posts for this app: ${app}
+
+PLATFORM: LinkedIn
+HARD LIMIT: 3,000 characters per post.
+ENGAGEMENT SWEET SPOT: 1,000-1,300 characters. LinkedIn posts above ~1,500 chars see engagement drop sharply.
+TARGET LENGTH FOR THIS TASK: 900-1,300 characters per post. DO NOT exceed 1,500.
+
+POST 1 — Founder story.
+POST 2 — Problem / solution.
+POST 3 — Results / value.
+
+Each: scroll-stopping first line (under 150 chars, appears above the "see more" fold), short paragraphs (1-3 sentences each), end with a clear CTA. Label each POST 1, POST 2, POST 3. After each, include the char count line.` },
+
+  instagram: { label: "Instagram", prompt: (app: string) => `${PLATFORM_LIMITS_PREAMBLE}Write 3 Instagram captions for this app: ${app}
+
+PLATFORM: Instagram
+HARD LIMITS: 2,200 characters per caption; maximum 30 hashtags per post (Instagram silently ignores posts with more).
+ENGAGEMENT SWEET SPOT: 300-800 characters of caption body, hashtags in a separate block below.
+
+CAPTION 1 — Launch announcement.
+CAPTION 2 — Behind the scenes.
+CAPTION 3 — User benefit.
+
+Each: caption body (300-800 chars) + 15-20 hashtags (separate block) + 1-2 suggested emoji for the caption opener. Label each CAPTION 1/2/3. After each, include the char count line covering caption + hashtags combined.` },
+
+  tiktok: { label: "TikTok Scripts", prompt: (app: string) => `${PLATFORM_LIMITS_PREAMBLE}Write 3 TikTok scripts for this app: ${app}
+
+PLATFORM: TikTok (scripts + captions)
+HARD LIMIT FOR CAPTION: 2,200 characters.
+CAPTION SWEET SPOT: 100-300 characters (TikTok audiences scroll fast).
+VIDEO LENGTH: scripts should fit the stated duration.
+
+SCRIPT 1 — POV format (15-30s).
+SCRIPT 2 — Tutorial (30-60s).
+SCRIPT 3 — Storytime (30-60s).
+
+Each: [HOOK], [VISUAL], [VOICEOVER], [CTA], music style. Then a short TikTok CAPTION (under 300 chars) and 3-5 hashtags. After the caption, include the char count line.` },
+
+  reddit_posts: { label: "Reddit Posts", prompt: (app: string) => `${PLATFORM_LIMITS_PREAMBLE}Write 3 Reddit posts for this app: ${app}
+
+PLATFORM: Reddit
+HARD LIMITS: Title 300 characters; body 40,000 characters.
+ENGAGEMENT SWEET SPOT: Title under 100 chars; self-post body 400-1,500 chars.
+VOICE: no hype, no emoji, builder-to-community tone. Marketing speak gets removed by mods.
+
+POST 1 — r/SideProject builder story.
+POST 2 — r/IndieHackers Show IH style.
+POST 3 — Niche subreddit value-first.
+
+For each: TITLE (under 100 chars), BODY (400-1,500 chars), suggested SUBREDDIT. After the body, include the char count line for title and body separately.` },
+
+  threads: { label: "Threads Posts", prompt: (app: string) => `${PLATFORM_LIMITS_PREAMBLE}Write 5 Threads posts for this app: ${app}
+
+PLATFORM: Threads (Meta)
+HARD LIMIT: 500 characters per post.
+TONE: conversational, no hashtags (Threads audiences dislike them).
+
+POST 1 — Hot take.
+POST 2 — Behind the scenes.
+POST 3 — Relatable moment.
+POST 4 — Plain English explanation.
+POST 5 — Engagement question.
+
+1-4 sentences each, no hashtags. Label each POST 1/2/3/4/5. After each, include the char count line.` },
+
+  carousel: { label: "Carousel Post", prompt: (app: string) => `${PLATFORM_LIMITS_PREAMBLE}Write a 7-slide carousel for this app: ${app}
+
+PLATFORM: LinkedIn or Instagram carousel.
+HARD LIMITS: Each slide headline under 60 characters, body under 200 characters (carousels are read fast — space is tight).
+OVERALL CAROUSEL CAPTION (the caption that accompanies the carousel post): 500-1200 chars for LinkedIn, 300-800 for Instagram.
+
+SLIDE 1 — Hook.
+SLIDE 2 — Problem.
+SLIDE 3 — Why existing solutions fail.
+SLIDE 4 — Solution.
+SLIDE 5 — Feature 1.
+SLIDE 6 — Feature 2 + proof.
+SLIDE 7 — CTA.
+
+For each slide: HEADLINE (<60 chars), BODY (<200 chars), VISUAL SUGGESTION. Then a CAROUSEL CAPTION block. After each slide and the caption, include the char count line.` },
 };
 
 export async function POST(request: Request) {

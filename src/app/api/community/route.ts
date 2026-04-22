@@ -101,6 +101,11 @@ When to follow up (day 5 + day 12), how to respond if they ask for exclusivity, 
     label: "Launch X Thread",
     prompt: (app: string) => `Write a complete 15-post launch thread for X (Twitter) for this app: ${app}
 
+PLATFORM: X (Twitter) thread.
+HARD LIMIT: Every single post in the thread MUST be 280 characters or fewer — INCLUDING the "1/15", "2/15" numbering, hashtags, handles, and emoji. Count carefully.
+If any draft post exceeds 280 chars, rewrite it before outputting.
+After each post, include a line in this exact format: "(xxx / 280 chars)" where xxx is the true character count including numbering, hashtags, and emoji.
+
 Return the plan in this structure:
 
 TIMING RECOMMENDATION

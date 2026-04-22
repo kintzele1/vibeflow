@@ -5,7 +5,17 @@ import { getBrandKit, formatBrandKitForPrompt } from "@/lib/brand";
 const CONTENT_TYPES = {
   blog:           { label: "Blog Post",       prompt: (app: string) => `Write a complete, SEO-optimized blog post for this app: ${app}\n\nInclude: compelling H1 headline, meta description (under 160 chars), hook introduction, 4-5 H2 sections with detail, strong conclusion with CTA. Aim for 800-1000 words. Make it genuinely useful, not promotional.` },
   newsletter:     { label: "Newsletter",      prompt: (app: string) => `Write a launch newsletter email for this app: ${app}\n\nInclude: subject line (under 50 chars), preview text (under 90 chars), personal opening, problem being solved, what makes this different, 3 key benefits, CTA button text, P.S. line. Under 400 words. Feels like a founder, not a corporation.` },
-  twitter:        { label: "Twitter/X Thread",prompt: (app: string) => `Write a high-engagement Twitter/X launch thread for this app: ${app}\n\nTweet 1: Hook (no "Introducing"). Tweets 2-6: problem → solution → features → social proof. Tweet 7: CTA. Each tweet under 280 chars, numbered (1/, 2/...). Human, not corporate.` },
+  twitter:        { label: "Twitter/X Thread",prompt: (app: string) => `Write a high-engagement Twitter/X launch thread for this app: ${app}
+
+PLATFORM: X (Twitter) thread.
+HARD LIMIT: Each tweet MUST be 280 characters or fewer — INCLUDING the "1/", "2/" numbering, hashtags, handles, and emoji. Count carefully.
+If any draft tweet exceeds 280 chars, rewrite it before outputting.
+
+Tweet 1: Hook (no "Introducing").
+Tweets 2-6: problem → solution → features → social proof.
+Tweet 7: CTA.
+
+Number each tweet "1/", "2/", ..., "7/". Human tone, not corporate. After each tweet, include a line in this exact format: "(xxx / 280 chars)" where xxx is the true character count including numbering, hashtags, and emoji.` },
   linkedin:       { label: "LinkedIn Post",   prompt: (app: string) => `Write a LinkedIn launch post for this app: ${app}\n\nFirst line: scroll-stopping hook. 3-4 short paragraphs: founder story, problem, solution, who it's for. CTA at end. Authentic and personal. Under 300 words.` },
   reddit:         { label: "Reddit Post",     prompt: (app: string) => `Write a Reddit launch post for r/SideProject or r/IndieHackers for this app: ${app}\n\nHonest title, real story of how long it took and what was hard, plain English description, current state, ask for feedback. No marketing speak.` },
   youtube:        { label: "YouTube Script",  prompt: (app: string) => `Write a YouTube video script for this app: ${app}\n\nInclude hook (15 sec), problem setup (30 sec), demo outline (2-3 min with [SCREEN:] cues), features, pricing/CTA, outro. Conversational tone.` },

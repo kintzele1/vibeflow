@@ -99,14 +99,13 @@ export function Pricing() {
             </div>
             <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", fontWeight: 500, marginBottom: 4 }}>&nbsp;</div>
             <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#878787", marginBottom: 32 }}>
-              Forever · 1 generation per agent · 9 total
+              Forever · 1 generation per agent · 8 total
             </div>
             <ul style={{ listStyle: "none", marginBottom: 32, display: "flex", flexDirection: "column", gap: 12 }}>
               {[
                 "1 full campaign (Launchpad)",
                 "1 content · 1 social · 1 email",
-                "1 SEO · 1 Paid Ads · 1 ASO",
-                "1 launch kit · 1 affiliate program",
+                "1 SEO · 1 Paid Ads · 1 ASO · 1 launch kit",
                 "Brand Kit, Calendar, saved campaigns",
                 "No credit card required",
               ].map(item => (

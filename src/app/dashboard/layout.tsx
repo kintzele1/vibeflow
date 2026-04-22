@@ -6,7 +6,7 @@ import { VibeFlowWordmark } from "@/components/logo/SparklerLogo";
 import {
   Zap, PenLine, Share2, Image, Folder, Calendar,
   Sparkles, Bot, Link, BarChart2, CreditCard, LogOut, Menu, X,
-  Search, Target, Mail, Smartphone, Rocket, Handshake
+  Search, Target, Mail, Smartphone, Rocket
 } from "lucide-react";
 
 const TABS = [
@@ -18,7 +18,6 @@ const TABS = [
   { label: "Paid Ads",          href: "/dashboard/ppc",          icon: Target },
   { label: "ASO",               href: "/dashboard/aso",          icon: Smartphone },
   { label: "Community & Launch",href: "/dashboard/community",    icon: Rocket },
-  { label: "Affiliate Marketing",href: "/dashboard/affiliate",   icon: Handshake },
   { label: "My Campaigns",      href: "/dashboard/campaigns",    icon: Folder },
   { label: "Calendar",          href: "/dashboard/calendar",     icon: Calendar },
   { label: "Brand Kit",         href: "/dashboard/brand",        icon: Sparkles },
@@ -59,7 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   async function fetchUsage(userId: string) {
     const { data } = await supabase
       .from("user_usage")
-      .select("searches_remaining, plan, free_launchpad_used, free_content_used, free_social_used, free_seo_used, free_ppc_used, free_email_used, free_aso_used, free_community_used, free_affiliate_used")
+      .select("searches_remaining, plan, free_launchpad_used, free_content_used, free_social_used, free_seo_used, free_ppc_used, free_email_used, free_aso_used, free_community_used")
       .eq("user_id", userId).single();
     if (data) {
       setSearches(data.searches_remaining);
@@ -67,7 +66,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const used = [
         data.free_launchpad_used, data.free_content_used, data.free_social_used,
         data.free_seo_used, data.free_ppc_used, data.free_email_used, data.free_aso_used,
-        data.free_community_used, data.free_affiliate_used,
+        data.free_community_used,
       ].filter(Boolean).length;
       setFreeUsedCount(used);
     }
@@ -120,13 +119,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
               <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#878787" }}>Free tier</span>
-              <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500, color: "#1F1F1F" }}>{freeUsedCount} of 9 agents</span>
+              <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500, color: "#1F1F1F" }}>{freeUsedCount} of 8 agents</span>
             </div>
             <div style={{ height: 4, background: "#EEEEEE", borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
               <div style={{
                 height: "100%", borderRadius: 999,
-                background: freeUsedCount >= 9 ? "#E24B4A" : freeUsedCount >= 7 ? "#F59E0B" : "#05AD98",
-                width: `${(freeUsedCount / 9) * 100}%`,
+                background: freeUsedCount >= 8 ? "#E24B4A" : freeUsedCount >= 6 ? "#F59E0B" : "#05AD98",
+                width: `${(freeUsedCount / 8) * 100}%`,
                 transition: "width 0.3s ease",
               }} />
             </div>

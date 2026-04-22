@@ -37,7 +37,7 @@ export default function DashboardPage() {
       if (!user) return;
       supabase
         .from("user_usage")
-        .select("plan, free_launchpad_used, free_content_used, free_social_used, free_seo_used, free_ppc_used, free_email_used, free_aso_used, free_community_used, free_affiliate_used")
+        .select("plan, free_launchpad_used, free_content_used, free_social_used, free_seo_used, free_ppc_used, free_email_used, free_aso_used, free_community_used")
         .eq("user_id", user.id)
         .single()
         .then(({ data }) => {
@@ -46,7 +46,7 @@ export default function DashboardPage() {
           const anyUsed = [
             data.free_launchpad_used, data.free_content_used, data.free_social_used,
             data.free_seo_used, data.free_ppc_used, data.free_email_used, data.free_aso_used,
-            data.free_community_used, data.free_affiliate_used,
+            data.free_community_used,
           ].some(Boolean);
           if (!anyUsed) setShowWelcome(true);
         });
@@ -135,7 +135,7 @@ export default function DashboardPage() {
               fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#555555",
               lineHeight: 1.6, marginBottom: 10,
             }}>
-              You get <strong>1 free generation per agent</strong> — 9 total across the Launchpad, Content, Social, Email, SEO, Paid Ads, ASO, Community & Launch, and Affiliate Marketing. Start here with a full campaign, or skip to any agent in the sidebar. Upgrade any time for 100 searches across everything.
+              You get <strong>1 free generation per agent</strong> — 8 total across the Launchpad, Content, Social, Email, SEO, Paid Ads, ASO, and Community & Launch. Start here with a full campaign, or skip to any agent in the sidebar. Upgrade any time for 100 searches across everything.
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <a href="/dashboard/brand" style={{

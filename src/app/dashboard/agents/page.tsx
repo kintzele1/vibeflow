@@ -9,7 +9,7 @@ const AGENTS: Agent[] = [
   { icon: "🎯", name: "Paid Ads (PPC)", desc: "Google, Meta, LinkedIn, X, TikTok ads with copy and targeting.", status: "live", href: "/dashboard/ppc" },
   { icon: "📧", name: "Email Marketing", desc: "Welcome, onboarding, upsell, re-engagement sequences + broadcasts.", status: "live", href: "/dashboard/email" },
   { icon: "📲", name: "ASO", desc: "App Store + Google Play titles, keywords, descriptions, screenshots, video scripts.", status: "live", href: "/dashboard/aso" },
-  { icon: "📊", name: "Analytics", desc: "Unified GA4 dashboard, predictive ROI, automated recommendations.", status: "coming" },
+  { icon: "📊", name: "Analytics", desc: "Unified GA4 dashboard, predictive ROI, automated recommendations.", status: "live", href: "/dashboard/analytics" },
   { icon: "🚀", name: "Community & Launch", desc: "Product Hunt kits, influencer outreach, Discord/Reddit, PR pitches, launch threads.", status: "live", href: "/dashboard/community" },
   { icon: "🤝", name: "Affiliate Marketing", desc: "Program setup, partner recruitment, asset kit, performance framework.", status: "live", href: "/dashboard/affiliate" },
 ];

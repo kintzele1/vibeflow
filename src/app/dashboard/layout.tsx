@@ -6,7 +6,7 @@ import { VibeFlowWordmark } from "@/components/logo/SparklerLogo";
 import {
   Zap, PenLine, Share2, Image, Folder, Calendar,
   Sparkles, Bot, Link, BarChart2, CreditCard, LogOut, Menu, X,
-  Search, Target, Mail, Smartphone, Rocket
+  Search, Target, Mail, Smartphone, Rocket, Handshake
 } from "lucide-react";
 
 const TABS = [
@@ -18,6 +18,7 @@ const TABS = [
   { label: "Paid Ads",          href: "/dashboard/ppc",          icon: Target },
   { label: "ASO",               href: "/dashboard/aso",          icon: Smartphone },
   { label: "Community & Launch",href: "/dashboard/community",    icon: Rocket },
+  { label: "Affiliate",         href: "/dashboard/affiliate",    icon: Handshake },
   { label: "My Campaigns",      href: "/dashboard/campaigns",    icon: Folder },
   { label: "Calendar",          href: "/dashboard/calendar",     icon: Calendar },
   { label: "Brand Kit",         href: "/dashboard/brand",        icon: Sparkles },

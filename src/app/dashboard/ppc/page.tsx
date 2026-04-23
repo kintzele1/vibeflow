@@ -57,7 +57,7 @@ export default function PpcPage() {
 
       if (response.status === 402) {
         const data = await response.json();
-        setError(data.message ?? "No searches remaining.");
+        setError(data.message ?? "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($299 for 1,200 searches) or buy another Launch Kit ($49 for 100) to keep generating.");
         setLoading(false);
         return;
       }

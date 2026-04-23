@@ -182,7 +182,7 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
       });
       if (res.status === 402) {
         const data = await res.json();
-        setNarrativeError(data.message ?? "No searches remaining.");
+        setNarrativeError(data.message ?? "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($299 for 1,200 searches) or buy another Launch Kit ($49 for 100) to keep generating.");
         setNarrativeLoading(false);
         return;
       }

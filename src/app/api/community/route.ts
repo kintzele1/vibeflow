@@ -166,7 +166,7 @@ export async function POST(request: Request) {
         }), { status: 402, headers: { "Content-Type": "application/json" } });
       }
     } else if (usage.searches_remaining <= 0) {
-      return new Response(JSON.stringify({ error: "no_searches", message: "No searches remaining." }),
+      return new Response(JSON.stringify({ error: "no_searches", message: "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($299 for 1,200 searches) or buy another Launch Kit ($49 for 100) to keep generating." }),
         { status: 402, headers: { "Content-Type": "application/json" } });
     }
 

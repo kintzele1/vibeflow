@@ -34,8 +34,11 @@ export default function TermsPage() {
           fontSize: 36, color: "#1F1F1F", letterSpacing: "-0.02em",
           marginBottom: 8,
         }}>Terms of Service</h1>
-        <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", marginBottom: 40 }}>
+        <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", marginBottom: 4 }}>
           Last updated: April 23, 2026
+        </p>
+        <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", marginBottom: 40 }}>
+          VibeFlow Marketing is a product of TNTW LLC, a Wyoming limited liability company.
         </p>
 
         <section style={{ fontSize: 15, color: "#333333", lineHeight: 1.75, marginBottom: 28 }}>

@@ -61,13 +61,20 @@ export function Nav() {
             fontFamily: "var(--font-dm-sans)",
             fontSize: 14,
             fontWeight: 500,
-            color: "#1F1F1F",
+            color: "#05AD98",
+            background: "transparent",
+            padding: "7px 18px",
+            borderRadius: 999,
+            border: "1.5px solid #05AD98",
             textDecoration: "none",
-            opacity: 0.7,
-            transition: "opacity 0.15s",
+            transition: "background 0.15s, color 0.15s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-          onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.7")}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#E6FAF8";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+          }}
         >
           Log in
         </a>

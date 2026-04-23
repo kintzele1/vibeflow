@@ -5,28 +5,44 @@ import { createClient } from "@/lib/supabase/client";
 import { VibeFlowWordmark } from "@/components/logo/SparklerLogo";
 import {
   Zap, PenLine, Share2, Image, Folder, Calendar,
-  Sparkles, Bot, Link, BarChart2, CreditCard, LogOut, Menu, X,
+  Sparkles, Link, BarChart2, CreditCard, LogOut, Menu, X,
   Search, Target, Mail, Smartphone, Rocket, Handshake
 } from "lucide-react";
 
-const TABS = [
-  { label: "Vibe Launchpad",    href: "/dashboard",              icon: Zap },
-  { label: "Content Marketing", href: "/dashboard/content",      icon: PenLine },
-  { label: "Social Media",      href: "/dashboard/social",       icon: Share2 },
-  { label: "Email Marketing",   href: "/dashboard/email",        icon: Mail },
-  { label: "SEO",               href: "/dashboard/seo",          icon: Search },
-  { label: "Paid Ads",          href: "/dashboard/ppc",          icon: Target },
-  { label: "ASO",               href: "/dashboard/aso",          icon: Smartphone },
-  { label: "Community & Launch",href: "/dashboard/community",    icon: Rocket },
-  { label: "Affiliate",         href: "/dashboard/affiliate",    icon: Handshake },
-  { label: "My Campaigns",      href: "/dashboard/campaigns",    icon: Folder },
-  { label: "Calendar",          href: "/dashboard/calendar",     icon: Calendar },
-  { label: "Brand Kit",         href: "/dashboard/brand",        icon: Sparkles },
-  { label: "Agents",            href: "/dashboard/agents",       icon: Bot },
-  { label: "Integrations",      href: "/dashboard/integrations", icon: Link },
-  { label: "Analytics Hub",     href: "/dashboard/analytics",    icon: BarChart2 },
-  { label: "Usage & Billing",   href: "/dashboard/billing",      icon: CreditCard },
+const TAB_GROUPS = [
+  {
+    label: "Agents",
+    tabs: [
+      { label: "Vibe Launchpad",    href: "/dashboard",              icon: Zap },
+      { label: "Content Marketing", href: "/dashboard/content",      icon: PenLine },
+      { label: "Social Media",      href: "/dashboard/social",       icon: Share2 },
+      { label: "Email Marketing",   href: "/dashboard/email",        icon: Mail },
+      { label: "SEO",               href: "/dashboard/seo",          icon: Search },
+      { label: "Paid Ads",          href: "/dashboard/ppc",          icon: Target },
+      { label: "ASO",               href: "/dashboard/aso",          icon: Smartphone },
+      { label: "Community & Launch",href: "/dashboard/community",    icon: Rocket },
+      { label: "Affiliate",         href: "/dashboard/affiliate",    icon: Handshake },
+    ],
+  },
+  {
+    label: "Workspace",
+    tabs: [
+      { label: "My Campaigns",      href: "/dashboard/campaigns",    icon: Folder },
+      { label: "Calendar",          href: "/dashboard/calendar",     icon: Calendar },
+      { label: "Brand Kit",         href: "/dashboard/brand",        icon: Sparkles },
+      { label: "Integrations",      href: "/dashboard/integrations", icon: Link },
+      { label: "Analytics Hub",     href: "/dashboard/analytics",    icon: BarChart2 },
+    ],
+  },
+  {
+    label: "Account",
+    tabs: [
+      { label: "Usage & Billing",   href: "/dashboard/billing",      icon: CreditCard },
+    ],
+  },
 ];
+// "Agents" tab removed from sidebar on Day 7 — the /dashboard/agents route
+// stays alive (unlinked) for deep-link backcompat. Delete fully post-launch.
 // Visual Assets tab removed at end of Day 2 — tool parked, backend code
 // (/dashboard/visuals + /api/generate-image) kept dormant for later revival.
 // See BACKLOG.md item #16 for the four revival options.
@@ -88,31 +104,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       <nav style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2, overflowY: "auto" }}>
-        {TABS.map(tab => {
-          const active = isActive(tab.href);
-          const Icon = tab.icon;
-          return (
-            <a key={tab.href} href={tab.href}
-              onClick={() => setMobileMenuOpen(false)}
-              style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "9px 12px", borderRadius: 10, textDecoration: "none",
-                background: active ? "#E6FAF8" : "transparent",
-                border: active ? "1px solid rgba(5,173,152,0.15)" : "1px solid transparent",
-                transition: "background 0.15s",
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.background = "#F8F8F8"; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
-            >
-              <Icon size={16} color={active ? "#05AD98" : "#878787"} strokeWidth={active ? 2.5 : 1.75} />
-              <span style={{
-                fontFamily: "var(--font-dm-sans)", fontSize: 14,
-                fontWeight: active ? 500 : 400,
-                color: active ? "#05AD98" : "#555555",
-              }}>{tab.label}</span>
-            </a>
-          );
-        })}
+        {TAB_GROUPS.map((group, groupIdx) => (
+          <div key={group.label} style={{ marginTop: groupIdx === 0 ? 0 : 18 }}>
+            <div style={{
+              padding: "0 12px 8px",
+              fontFamily: "var(--font-dm-sans)",
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#AAAAAA",
+            }}>{group.label}</div>
+            {group.tabs.map(tab => {
+              const active = isActive(tab.href);
+              const Icon = tab.icon;
+              return (
+                <a key={tab.href} href={tab.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "9px 12px", borderRadius: 10, textDecoration: "none",
+                    background: active ? "#E6FAF8" : "transparent",
+                    border: active ? "1px solid rgba(5,173,152,0.15)" : "1px solid transparent",
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = "#F8F8F8"; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                >
+                  <Icon size={16} color={active ? "#05AD98" : "#878787"} strokeWidth={active ? 2.5 : 1.75} />
+                  <span style={{
+                    fontFamily: "var(--font-dm-sans)", fontSize: 14,
+                    fontWeight: active ? 500 : 400,
+                    color: active ? "#05AD98" : "#555555",
+                  }}>{tab.label}</span>
+                </a>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <div style={{ padding: "16px", borderTop: "1px solid #EEEEEE" }}>

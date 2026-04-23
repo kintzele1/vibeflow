@@ -56,10 +56,15 @@ export function Footer() {
               >
                 Product
               </div>
-              {["How It Works", "Features", "Pricing", "Changelog"].map((link) => (
+              {[
+                { label: "How It Works", href: "/#how-it-works" },
+                { label: "Features", href: "/#features" },
+                { label: "Pricing", href: "/#pricing" },
+                { label: "FAQ", href: "/#faq" },
+              ].map((link) => (
                 <a
-                  key={link}
-                  href="#"
+                  key={link.label}
+                  href={link.href}
                   style={{
                     fontFamily: "var(--font-dm-sans)",
                     fontSize: 14,
@@ -70,7 +75,7 @@ export function Footer() {
                   onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
                   onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.6)")}
                 >
-                  {link}
+                  {link.label}
                 </a>
               ))}
             </div>
@@ -89,10 +94,13 @@ export function Footer() {
               >
                 Legal
               </div>
-              {["Privacy Policy", "Terms of Service"].map((link) => (
+              {[
+                { label: "Privacy Policy", href: "/privacy" },
+                { label: "Terms of Service", href: "/terms" },
+              ].map((link) => (
                 <a
-                  key={link}
-                  href="#"
+                  key={link.label}
+                  href={link.href}
                   style={{
                     fontFamily: "var(--font-dm-sans)",
                     fontSize: 14,
@@ -103,7 +111,7 @@ export function Footer() {
                   onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
                   onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.6)")}
                 >
-                  {link}
+                  {link.label}
                 </a>
               ))}
             </div>

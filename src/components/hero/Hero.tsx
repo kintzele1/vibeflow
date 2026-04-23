@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { SparklerLogo } from "@/components/logo/SparklerLogo";
 
 export function Hero() {
   const [prompt, setPrompt] = useState("");
@@ -46,11 +45,6 @@ export function Hero() {
         }}>
           Your complete marketing OS — from launch campaign to ongoing growth, all from a single prompt.
         </p>
-
-        {/* Sparkler */}
-        <div style={{ marginBottom: 48, display: "flex", justifyContent: "center" }}>
-          <SparklerLogo size={80} colorway="teal" animate />
-        </div>
 
         {/* CTA buttons */}
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>

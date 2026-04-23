@@ -34,25 +34,27 @@ export function Nav() {
       <VibeFlowWordmark size="sm" colorway="teal" animate={false} />
 
       <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
-        {NAV_LINKS.map((link) => (
-          <a
-            key={link.href}
-            href={link.href}
-            style={{
-              fontFamily: "var(--font-dm-sans)",
-              fontSize: 14,
-              fontWeight: 500,
-              color: "#1F1F1F",
-              textDecoration: "none",
-              opacity: 0.7,
-              transition: "opacity 0.15s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.7")}
-          >
-            {link.label}
-          </a>
-        ))}
+        <div className="nav-desktop-links" style={{ display: "flex", alignItems: "center", gap: 32 }}>
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              style={{
+                fontFamily: "var(--font-dm-sans)",
+                fontSize: 14,
+                fontWeight: 500,
+                color: "#1F1F1F",
+                textDecoration: "none",
+                opacity: 0.7,
+                transition: "opacity 0.15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.7")}
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
         <a
           href="#pricing"
           style={{
@@ -78,6 +80,12 @@ export function Nav() {
           Get Started
         </a>
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .nav-desktop-links { display: none !important; }
+        }
+      `}</style>
     </nav>
   );
 }

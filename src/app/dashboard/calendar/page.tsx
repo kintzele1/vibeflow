@@ -232,7 +232,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div style={{ padding: "40px 48px", maxWidth: 1100, margin: "0 auto" }}>
+    <div className="calendar-page" style={{ padding: "40px 48px", maxWidth: 1100, margin: "0 auto" }}>
 
       {/* Schedule modal */}
       {schedulingId && (
@@ -474,7 +474,7 @@ export default function CalendarPage() {
       )}
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+      <div className="calendar-filters" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
         {(["all", "active", "completed"] as const).map(s => (
           <button key={s} onClick={() => setFilterStatus(s)} style={{
             fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
@@ -495,10 +495,10 @@ export default function CalendarPage() {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 20 }}>
+      <div className="calendar-body" style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 20 }}>
 
-        {/* Calendar */}
-        <div>
+        {/* Calendar (desktop month-grid view — hidden on mobile, upcoming feed takes over) */}
+        <div className="calendar-month-view">
           {/* Month nav */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#878787", padding: "4px 8px" }}>‹</button>
@@ -715,6 +715,23 @@ export default function CalendarPage() {
           )}
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .calendar-page { padding: 24px 16px !important; }
+          .calendar-body { grid-template-columns: 1fr !important; gap: 12px !important; }
+          .calendar-month-view { display: none !important; }
+          .calendar-filters {
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            padding-bottom: 8px !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+          }
+          .calendar-filters::-webkit-scrollbar { display: none; }
+          .calendar-filters > button { flex-shrink: 0; }
+        }
+      `}</style>
     </div>
   );
 }

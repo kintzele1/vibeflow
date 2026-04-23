@@ -7,7 +7,7 @@ import WelcomeModal from "@/components/dashboard/WelcomeModal";
 import {
   Zap, PenLine, Share2, Image, Folder, Calendar,
   Sparkles, Link, BarChart2, CreditCard, LogOut, Menu, X,
-  Search, Target, Mail, Smartphone, Rocket, Handshake
+  Search, Target, Mail, Smartphone, Rocket, Handshake, Settings
 } from "lucide-react";
 
 const TAB_GROUPS = [
@@ -38,6 +38,7 @@ const TAB_GROUPS = [
   {
     label: "Account",
     tabs: [
+      { label: "Settings",          href: "/dashboard/settings",     icon: Settings },
       { label: "Usage & Billing",   href: "/dashboard/billing",      icon: CreditCard },
     ],
   },

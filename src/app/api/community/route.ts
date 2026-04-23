@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getBrandKit, formatBrandKitForPrompt } from "@/lib/brand";
+import { logLearningSignal } from "@/lib/learning";
 
 const COMMUNITY_TYPES = {
   product_hunt: {
@@ -146,6 +147,8 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response("Unauthorized", { status: 401 });
+
+    logLearningSignal({ userId: user.id, agentType: "community", contentType: communityType ?? null, promptLen: (prompt ?? "").length, signalType: "generation_attempted" }).catch(() => {});
 
     const { data: usage } = await supabase
       .from("user_usage")

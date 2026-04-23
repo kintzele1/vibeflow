@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getBrandKit, formatBrandKitForPrompt } from "@/lib/brand";
+import { logLearningSignal } from "@/lib/learning";
 
 const AFFILIATE_TYPES = {
   program_setup: {
@@ -136,6 +137,13 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response("Unauthorized", { status: 401 });
+
+    // Fire-and-forget Learning Engine telemetry (respects user's opt-in flag).
+    logLearningSignal({
+      userId: user.id, agentType: "affiliate",
+      contentType: affiliateType ?? null, promptLen: (prompt ?? "").length,
+      signalType: "generation_attempted",
+    }).catch(() => {});
 
     const { data: usage } = await supabase
       .from("user_usage")

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getBrandKit, formatBrandKitForPrompt } from "@/lib/brand";
+import { logLearningSignal } from "@/lib/learning";
 
 const SEO_TYPES = {
   keywords: {
@@ -141,6 +142,8 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response("Unauthorized", { status: 401 });
+
+    logLearningSignal({ userId: user.id, agentType: "seo", contentType: seoType ?? null, promptLen: (prompt ?? "").length, signalType: "generation_attempted" }).catch(() => {});
 
     const { data: usage } = await supabase
       .from("user_usage")

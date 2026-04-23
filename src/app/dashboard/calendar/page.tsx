@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { platformOf, composerInfo, composerUrl } from "@/lib/platforms";
+import { platformOf, composerInfo, composerUrl, splitIntoPosts, type PostUnit } from "@/lib/platforms";
 
 type Campaign = {
   id: string;
@@ -94,6 +94,7 @@ export default function CalendarPage() {
   const [suggestingId, setSuggestingId] = useState<string | null>(null);
   const [suggestionFor, setSuggestionFor] = useState<{ id: string; data: SuggestedTime } | null>(null);
   const [copyToast, setCopyToast] = useState<string>("");
+  const [picker, setPicker] = useState<{ campaign: Campaign; units: PostUnit[] } | null>(null);
   const supabase = createClient();
 
   useEffect(() => { fetchCampaigns(); }, []);
@@ -111,19 +112,31 @@ export default function CalendarPage() {
   }
 
   async function handleCopyToComposer(campaign: Campaign) {
+    // If the campaign body contains multiple posts (POST 1 / TWEET 1/ / etc),
+    // show a picker so the user copies ONE at a time instead of pasting the
+    // whole blob into a single platform composer.
+    const units = splitIntoPosts(campaign.content);
+    if (units.length > 1) {
+      setPicker({ campaign, units });
+      return;
+    }
+
+    // Single-asset: behave as before.
+    await copyAndOpen(campaign, campaign.content);
+  }
+
+  async function copyAndOpen(campaign: Campaign, textToCopy: string) {
     const platform = platformOf(campaign.content_type);
     const info = composerInfo(platform);
     const title = campaign.title ?? undefined;
 
-    // Always copy to clipboard first, regardless of prefill support.
     try {
-      await navigator.clipboard.writeText(campaign.content);
+      await navigator.clipboard.writeText(textToCopy);
     } catch {
-      // Older browsers may block writeText without user gesture on some pages;
-      // still proceed with the open step.
+      // Graceful: some browsers block writeText without a user gesture
     }
 
-    const url = composerUrl(platform, campaign.content, title);
+    const url = composerUrl(platform, textToCopy, title);
     if (url) {
       window.open(url, "_blank", "noopener,noreferrer");
     }
@@ -330,6 +343,96 @@ export default function CalendarPage() {
           boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
           maxWidth: 360,
         }}>{copyToast}</div>
+      )}
+
+      {/* Multi-post picker modal */}
+      {picker && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1500,
+          padding: 24,
+        }}>
+          <div style={{
+            background: "#FFFFFF", borderRadius: 20, padding: "28px 32px",
+            maxWidth: 560, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.15)",
+          }}>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 18, color: "#1F1F1F", marginBottom: 6 }}>
+                This campaign has {picker.units.length} posts
+              </div>
+              <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", lineHeight: 1.6, margin: 0 }}>
+                Pick the one you want to copy. We'll copy just that post and open {composerInfo(platformOf(picker.campaign.content_type)).platformName} — don't paste the whole campaign into one composer.
+              </p>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+              {picker.units.map((unit, idx) => {
+                // Naively enforce platform limits visually so over-limit posts are flagged.
+                const platform = platformOf(picker.campaign.content_type);
+                const limit =
+                  platform === "x" || platform === "twitter" ? 280 :
+                  platform === "threads" ? 500 :
+                  platform === "linkedin" ? 3000 :
+                  platform === "instagram" ? 2200 :
+                  platform === "tiktok" ? 2200 :
+                  null;
+                const overLimit = limit !== null && unit.charCount > limit;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      const c = picker.campaign;
+                      setPicker(null);
+                      copyAndOpen(c, unit.fullText);
+                    }}
+                    style={{
+                      textAlign: "left",
+                      background: "#FAFAFA",
+                      border: `1.5px solid ${overLimit ? "rgba(226,75,74,0.3)" : "#EEEEEE"}`,
+                      borderRadius: 12, padding: "14px 16px",
+                      fontFamily: "var(--font-dm-sans)", cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 6 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#1F1F1F" }}>
+                        {unit.label || `Post ${idx + 1}`}
+                      </div>
+                      <div style={{
+                        fontSize: 11, fontWeight: 500,
+                        color: overLimit ? "#E24B4A" : "#878787",
+                      }}>
+                        {unit.charCount}{limit !== null ? ` / ${limit}` : ""} chars
+                        {overLimit && " · over limit"}
+                      </div>
+                    </div>
+                    <div style={{
+                      fontSize: 13, color: "#555555", lineHeight: 1.5,
+                      overflow: "hidden", display: "-webkit-box",
+                      WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                    }}>
+                      {unit.preview}
+                    </div>
+                    <div style={{
+                      marginTop: 10, fontSize: 12, fontWeight: 500, color: "#05AD98",
+                    }}>
+                      Copy this post & open composer →
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <button onClick={() => setPicker(null)} style={{
+                flex: 1, padding: "12px", borderRadius: 10,
+                border: "1.5px solid #EEEEEE", background: "#FFFFFF",
+                fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
+                color: "#878787", cursor: "pointer",
+              }}>Cancel</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Suggested-time modal */}

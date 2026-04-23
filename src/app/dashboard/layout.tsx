@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { VibeFlowWordmark } from "@/components/logo/SparklerLogo";
+import WelcomeModal from "@/components/dashboard/WelcomeModal";
 import {
   Zap, PenLine, Share2, Image, Folder, Calendar,
   Sparkles, Link, BarChart2, CreditCard, LogOut, Menu, X,
@@ -63,6 +64,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [plan, setPlan] = useState<string>("free");
   const [freeUsedCount, setFreeUsedCount] = useState<number>(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Default to true so the modal doesn't flash while the usage row loads
+  const [onboarded, setOnboarded] = useState<boolean>(true);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -75,11 +78,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   async function fetchUsage(userId: string) {
     const { data } = await supabase
       .from("user_usage")
-      .select("searches_remaining, plan, free_launchpad_used, free_content_used, free_social_used, free_seo_used, free_ppc_used, free_email_used, free_aso_used, free_community_used")
+      .select("searches_remaining, plan, onboarded, free_launchpad_used, free_content_used, free_social_used, free_seo_used, free_ppc_used, free_email_used, free_aso_used, free_community_used")
       .eq("user_id", userId).single();
     if (data) {
       setSearches(data.searches_remaining);
       setPlan(data.plan);
+      // If the column is missing (e.g., migration not yet applied), treat as onboarded=true to avoid flashing the modal.
+      setOnboarded(data.onboarded ?? true);
       const used = [
         data.free_launchpad_used, data.free_content_used, data.free_social_used,
         data.free_seo_used, data.free_ppc_used, data.free_email_used, data.free_aso_used,
@@ -219,6 +224,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#F8F8F8" }}>
+
+      {/* First-run onboarding — shows if the user hasn't completed Welcome yet */}
+      {user && !onboarded && (
+        <WelcomeModal onComplete={() => setOnboarded(true)} />
+      )}
 
       {/* Desktop sidebar */}
       <aside className="desktop-sidebar" style={{

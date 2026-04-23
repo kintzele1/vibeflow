@@ -56,6 +56,22 @@ export function Nav() {
           ))}
         </div>
         <a
+          href="/login"
+          style={{
+            fontFamily: "var(--font-dm-sans)",
+            fontSize: 14,
+            fontWeight: 500,
+            color: "#1F1F1F",
+            textDecoration: "none",
+            opacity: 0.7,
+            transition: "opacity 0.15s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.7")}
+        >
+          Log in
+        </a>
+        <a
           href="#pricing"
           style={{
             fontFamily: "var(--font-dm-sans)",

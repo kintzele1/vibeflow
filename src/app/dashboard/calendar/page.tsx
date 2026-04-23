@@ -576,89 +576,12 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Unscheduled sidebar */}
-        <div>
-          <div style={{
-            fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
-            color: "#AAAAAA", letterSpacing: "0.08em", textTransform: "uppercase",
-            marginBottom: 12,
-          }}>
-            Unscheduled ({unscheduled.length})
-          </div>
+        {/* Sidebar: Scheduled first, then Unscheduled (mobile-first ordering) */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-          {unscheduled.length === 0 ? (
-            <div style={{
-              background: "#F8F8F8", borderRadius: 14, padding: "24px 16px",
-              textAlign: "center", fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#AAAAAA",
-            }}>
-              All campaigns scheduled! 🎉
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {unscheduled.map(c => {
-                const info = getTypeInfo(c.content_type);
-                return (
-                  <div key={c.id} style={{
-                    background: "#FFFFFF", borderRadius: 12, padding: "12px 14px",
-                    border: "1.5px solid #EEEEEE",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                      <span style={{ fontSize: 14 }}>{info.icon}</span>
-                      <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 11, fontWeight: 500, color: "#878787" }}>
-                        {info.label}
-                      </span>
-                    </div>
-                    <div style={{
-                      fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#555555",
-                      lineHeight: 1.5, marginBottom: 10,
-                      overflow: "hidden", display: "-webkit-box",
-                      WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-                    }}>
-                      {c.prompt}
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <button
-                        onClick={() => setSchedulingId(c.id)}
-                        style={{
-                          flex: 1, padding: "7px", borderRadius: 8,
-                          border: "1.5px solid #05AD98", background: "transparent",
-                          fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
-                          color: "#05AD98", cursor: "pointer", minWidth: 100,
-                        }}
-                      >
-                        + Schedule
-                      </button>
-                      <button
-                        onClick={() => handleCopyToComposer(c)}
-                        title={composerInfo(platformOf(c.content_type)).buttonLabel}
-                        style={{
-                          padding: "7px 10px", borderRadius: 8,
-                          border: "1px solid #EEEEEE", background: "#F8F8F8",
-                          fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#555",
-                          cursor: "pointer",
-                        }}
-                      >📋</button>
-                      <button
-                        onClick={() => handleSuggestTime(c)}
-                        disabled={suggestingId === c.id}
-                        title="Suggest best posting time"
-                        style={{
-                          padding: "7px 10px", borderRadius: 8,
-                          border: "1px solid #EEEEEE", background: "#F8F8F8",
-                          fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#555",
-                          cursor: suggestingId === c.id ? "not-allowed" : "pointer",
-                        }}
-                      >{suggestingId === c.id ? "…" : "⏰"}</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Scheduled summary */}
+          {/* Scheduled */}
           {scheduled.length > 0 && (
-            <div style={{ marginTop: 20 }}>
+            <div>
               <div style={{
                 fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
                 color: "#AAAAAA", letterSpacing: "0.08em", textTransform: "uppercase",
@@ -713,6 +636,87 @@ export default function CalendarPage() {
               </div>
             </div>
           )}
+
+          {/* Unscheduled */}
+          <div>
+            <div style={{
+              fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
+              color: "#AAAAAA", letterSpacing: "0.08em", textTransform: "uppercase",
+              marginBottom: 12,
+            }}>
+              Unscheduled ({unscheduled.length})
+            </div>
+
+            {unscheduled.length === 0 ? (
+              <div style={{
+                background: "#F8F8F8", borderRadius: 14, padding: "24px 16px",
+                textAlign: "center", fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#AAAAAA",
+              }}>
+                All campaigns scheduled! 🎉
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {unscheduled.map(c => {
+                  const info = getTypeInfo(c.content_type);
+                  return (
+                    <div key={c.id} style={{
+                      background: "#FFFFFF", borderRadius: 12, padding: "12px 14px",
+                      border: "1.5px solid #EEEEEE",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                        <span style={{ fontSize: 14 }}>{info.icon}</span>
+                        <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 11, fontWeight: 500, color: "#878787" }}>
+                          {info.label}
+                        </span>
+                      </div>
+                      <div style={{
+                        fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#555555",
+                        lineHeight: 1.5, marginBottom: 10,
+                        overflow: "hidden", display: "-webkit-box",
+                        WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                      }}>
+                        {c.prompt}
+                      </div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <button
+                          onClick={() => setSchedulingId(c.id)}
+                          style={{
+                            flex: 1, padding: "7px", borderRadius: 8,
+                            border: "1.5px solid #05AD98", background: "transparent",
+                            fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
+                            color: "#05AD98", cursor: "pointer", minWidth: 100,
+                          }}
+                        >
+                          + Schedule
+                        </button>
+                        <button
+                          onClick={() => handleCopyToComposer(c)}
+                          title={composerInfo(platformOf(c.content_type)).buttonLabel}
+                          style={{
+                            padding: "7px 10px", borderRadius: 8,
+                            border: "1px solid #EEEEEE", background: "#F8F8F8",
+                            fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#555",
+                            cursor: "pointer",
+                          }}
+                        >📋</button>
+                        <button
+                          onClick={() => handleSuggestTime(c)}
+                          disabled={suggestingId === c.id}
+                          title="Suggest best posting time"
+                          style={{
+                            padding: "7px 10px", borderRadius: 8,
+                            border: "1px solid #EEEEEE", background: "#F8F8F8",
+                            fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#555",
+                            cursor: suggestingId === c.id ? "not-allowed" : "pointer",
+                          }}
+                        >{suggestingId === c.id ? "…" : "⏰"}</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -33,7 +33,7 @@ export function Nav() {
     >
       <VibeFlowWordmark size="sm" colorway="teal" animate={false} />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+      <div className="nav-right" style={{ display: "flex", alignItems: "center", gap: 32 }}>
         <div className="nav-desktop-links" style={{ display: "flex", alignItems: "center", gap: 32 }}>
           {NAV_LINKS.map((link) => (
             <a
@@ -57,6 +57,7 @@ export function Nav() {
         </div>
         <a
           href="/login"
+          className="nav-login-btn"
           style={{
             fontFamily: "var(--font-dm-sans)",
             fontSize: 14,
@@ -71,6 +72,7 @@ export function Nav() {
             textAlign: "center" as const,
             display: "inline-block",
             boxSizing: "border-box" as const,
+            whiteSpace: "nowrap" as const,
             transition: "background 0.15s",
           }}
           onMouseEnter={(e) => {
@@ -84,6 +86,7 @@ export function Nav() {
         </a>
         <a
           href="#pricing"
+          className="nav-cta-btn"
           style={{
             fontFamily: "var(--font-dm-sans)",
             fontSize: 14,
@@ -93,6 +96,7 @@ export function Nav() {
             padding: "8px 20px",
             borderRadius: 999,
             textDecoration: "none",
+            whiteSpace: "nowrap" as const,
             transition: "background 0.15s, transform 0.15s",
           }}
           onMouseEnter={(e) => {
@@ -111,6 +115,15 @@ export function Nav() {
       <style>{`
         @media (max-width: 640px) {
           .nav-desktop-links { display: none !important; }
+          /* Tighten spacing so wordmark + Log in + Get Started fit on narrow viewports */
+          .nav-right { gap: 10px !important; }
+          .nav-login-btn { min-width: 0 !important; padding: 7px 14px !important; }
+          .nav-cta-btn { padding: 7px 14px !important; }
+        }
+        @media (max-width: 400px) {
+          /* Extra-tight for iPhone SE and smaller */
+          .nav-login-btn { padding: 6px 10px !important; font-size: 13px !important; }
+          .nav-cta-btn { padding: 6px 10px !important; font-size: 13px !important; }
         }
       `}</style>
     </nav>

@@ -12,13 +12,31 @@
 import * as Sentry from "@sentry/nextjs";
 
 export async function GET() {
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  const hasDSN = !!dsn;
+  const dsnPrefix = dsn ? `${dsn.slice(0, 40)}...` : "undefined";
+  const runtime = process.env.NEXT_RUNTIME ?? "unknown";
+  const vercelEnv = process.env.VERCEL_ENV ?? "unknown";
+
+  // Try to capture
+  let captureResult = "not attempted";
   try {
-    throw new Error("Sentry test — intentional server error from /api/sentry-test");
+    throw new Error(`Sentry test — hasDSN:${hasDSN} runtime:${runtime}`);
   } catch (err) {
-    Sentry.captureException(err);
-    // flush() forces the SDK to send queued events before the function returns
-    // (Vercel kills the lambda as soon as the response is sent).
+    const eventId = Sentry.captureException(err);
     await Sentry.flush(2000);
-    throw err;
+    captureResult = eventId ? `captured: ${eventId}` : "captured but no eventId (SDK silent)";
   }
+
+  return new Response(JSON.stringify({
+    hasDSN,
+    dsnPrefix,
+    runtime,
+    vercelEnv,
+    captureResult,
+    sentryVersion: "@sentry/nextjs@10.x",
+  }, null, 2), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }

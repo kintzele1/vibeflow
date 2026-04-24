@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getBrandKit, formatBrandKitForPrompt } from "@/lib/brand";
 import { logLearningSignal } from "@/lib/learning";
+import { checkAgentRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 const AFFILIATE_TYPES = {
   program_setup: {
@@ -137,6 +138,10 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response("Unauthorized", { status: 401 });
+
+    // Per-user rate limit: 10 agent-generation requests per 60 seconds
+    const rl = await checkAgentRateLimit(user.id);
+    if (!rl.allowed) return rateLimitedResponse(rl);
 
     // Fire-and-forget Learning Engine telemetry (respects user's opt-in flag).
     logLearningSignal({

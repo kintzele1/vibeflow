@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getBrandKit, formatBrandKitForPrompt } from "@/lib/brand";
 import { logLearningSignal } from "@/lib/learning";
+import { checkAgentRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
 
 const CONTENT_TYPES = {
   blog:           { label: "Blog Post",       prompt: (app: string) => `Write a complete, SEO-optimized blog post for this app: ${app}\n\nInclude: compelling H1 headline, meta description (under 160 chars), hook introduction, 4-5 H2 sections with detail, strong conclusion with CTA. Aim for 800-1000 words. Make it genuinely useful, not promotional.` },
@@ -35,6 +36,10 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response("Unauthorized", { status: 401 });
+
+    // Per-user rate limit: 10 agent-generation requests per 60 seconds
+    const rl = await checkAgentRateLimit(user.id);
+    if (!rl.allowed) return rateLimitedResponse(rl);
 
     logLearningSignal({ userId: user.id, agentType: "content", contentType: contentType ?? null, promptLen: (prompt ?? "").length, signalType: "generation_attempted" }).catch(() => {});
 

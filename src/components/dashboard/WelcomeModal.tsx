@@ -63,10 +63,11 @@ export default function WelcomeModal({ onComplete }: { onComplete: () => void })
       // Then mark onboarded
       await fetch("/api/onboarding/complete", { method: "POST" });
 
-      // Set tooltip flag in localStorage so Launchpad shows a one-time tip
-      try { localStorage.setItem("vibeflow_show_launchpad_tip", "1"); } catch {}
-
+      // Dismiss modal, then route to full Brand Kit so user can finish
+      // logo, secondary color, voice, and target audience. The 3 fields
+      // they just saved are pre-filled on the Brand Kit page.
       onComplete();
+      window.location.href = "/dashboard/brand";
     } catch (err: any) {
       setError(err.message || "Something went wrong. Try again.");
       setSaving(false);
@@ -180,13 +181,13 @@ export default function WelcomeModal({ onComplete }: { onComplete: () => void })
               fontSize: 24, color: "#1F1F1F",
               letterSpacing: "-0.02em", lineHeight: 1.2, marginBottom: 8,
             }}>
-              Your Brand Kit
+              Brand Basics
             </h2>
             <p style={{
               fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787",
-              marginBottom: 24,
+              marginBottom: 24, lineHeight: 1.55,
             }}>
-              You can edit these anytime from the Brand Kit tab.
+              Just the essentials to get us started. We'll take you to your full Brand Kit next — logo, secondary color, voice, and target audience.
             </p>
 
             {/* App name */}
@@ -308,7 +309,7 @@ export default function WelcomeModal({ onComplete }: { onComplete: () => void })
                   transition: "background 0.15s",
                 }}
               >
-                {saving ? "Saving…" : "Save Brand Kit & start generating →"}
+                {saving ? "Saving…" : "Save & continue to Brand Kit →"}
               </button>
               <button
                 onClick={handleSkip}

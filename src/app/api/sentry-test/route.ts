@@ -11,21 +11,30 @@
  */
 import * as Sentry from "@sentry/nextjs";
 
+// Force-init at module load. If instrumentation.ts never fired (Turbopack
+// quirk), this ensures the SDK is actually initialized before capture.
+// debug:true makes the SDK log its internal state to stdout — visible in
+// Vercel runtime logs so we can see if events are actually transmitted.
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+const initializedByRoute = !Sentry.isInitialized() && !!dsn;
+if (initializedByRoute) {
+  Sentry.init({ dsn, debug: true });
+}
+
 export async function GET() {
-  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
   const hasDSN = !!dsn;
   const dsnPrefix = dsn ? `${dsn.slice(0, 40)}...` : "undefined";
   const runtime = process.env.NEXT_RUNTIME ?? "unknown";
   const vercelEnv = process.env.VERCEL_ENV ?? "unknown";
+  const wasInitialized = Sentry.isInitialized();
 
-  // Try to capture
   let captureResult = "not attempted";
   try {
     throw new Error(`Sentry test — hasDSN:${hasDSN} runtime:${runtime}`);
   } catch (err) {
     const eventId = Sentry.captureException(err);
-    await Sentry.flush(2000);
-    captureResult = eventId ? `captured: ${eventId}` : "captured but no eventId (SDK silent)";
+    const flushed = await Sentry.flush(3000);
+    captureResult = `eventId: ${eventId}, flushed: ${flushed}`;
   }
 
   return new Response(JSON.stringify({
@@ -33,8 +42,9 @@ export async function GET() {
     dsnPrefix,
     runtime,
     vercelEnv,
+    wasInitialized,
+    initializedByRoute,
     captureResult,
-    sentryVersion: "@sentry/nextjs@10.x",
   }, null, 2), {
     status: 200,
     headers: { "Content-Type": "application/json" },

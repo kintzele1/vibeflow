@@ -43,7 +43,7 @@ export function Hero() {
           color: "#878787", lineHeight: 1.6, marginBottom: 48,
           maxWidth: 560, margin: "0 auto 48px",
         }}>
-          Your complete marketing OS — from launch campaign to ongoing growth, all from a single prompt.
+          Your AI-powered Marketing Operating System — from launch campaign to ongoing growth, all from a single prompt.
         </p>
 
         {/* CTA buttons */}

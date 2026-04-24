@@ -36,7 +36,7 @@ export function MarketingOS() {
           {[
             { num: "01", title: "Generate", desc: "One prompt creates a full campaign across every channel — copy, social, ads, email, SEO." },
             { num: "02", title: "Schedule", desc: "Drag campaigns onto your marketing calendar. See the full month at a glance." },
-            { num: "03", title: "Optimize", desc: "Connect your analytics. Get AI recommendations on what's working and what to do next." },
+            { num: "03", title: "Optimize", desc: "Flip on the Learning Engine. Every campaign learns from the last one. Optimization, stupid simple." },
           ].map(p => (
             <div key={p.title} style={{
               background: "#FFFFFF", borderRadius: 16, padding: "28px 24px",

@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.87.0",
     "@fal-ai/client": "^1.9.5",
     "@fal-ai/serverless-client": "^0.15.0",
+    "@sentry/nextjs": "^10.50.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
     "@upstash/ratelimit": "^2.0.8",

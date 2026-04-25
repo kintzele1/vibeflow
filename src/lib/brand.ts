@@ -8,6 +8,9 @@ export type BrandKit = {
   brand_voice: string[] | null;
   target_audience: string | null;
   logo_url: string | null;
+  website_url: string | null;
+  app_store_url: string | null;
+  play_store_url: string | null;
 };
 
 export async function getBrandKit(): Promise<BrandKit | null> {

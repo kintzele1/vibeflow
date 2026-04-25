@@ -195,7 +195,21 @@ export async function POST(request: Request) {
     let brandKitSection = "";
     if (applyBrandKit) {
       const brand = await getBrandKit();
-      if (brand) brandKitSection = formatBrandKitForPrompt(brand) + "\n\n";
+      if (brand) {
+        brandKitSection = formatBrandKitForPrompt(brand) + "\n\n";
+        // If user has app store URL(s) on file, fetch + parse current listing(s)
+        // so the ASO agent can give SPECIFIC recommendations vs generic advice.
+        // Both stores are fetched in parallel; either or both may be present.
+        if (brand.app_store_url || brand.play_store_url) {
+          const { analyzeAppStore, formatAppStoreAnalysisForPrompt } = await import("@/lib/url-analysis");
+          const [appleAnalysis, googleAnalysis] = await Promise.all([
+            brand.app_store_url ? analyzeAppStore(brand.app_store_url) : null,
+            brand.play_store_url ? analyzeAppStore(brand.play_store_url) : null,
+          ]);
+          if (appleAnalysis) brandKitSection += formatAppStoreAnalysisForPrompt(appleAnalysis) + "\n\n";
+          if (googleAnalysis) brandKitSection += formatAppStoreAnalysisForPrompt(googleAnalysis) + "\n\n";
+        }
+      }
     }
 
     const userPrompt = brandKitSection + typeConfig.prompt(prompt);

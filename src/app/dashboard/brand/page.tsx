@@ -15,6 +15,12 @@ type BrandKit = {
   brand_voice: string[];
   target_audience: string;
   logo_url: string | null;
+  // Optional URLs — when provided, SEO + ASO agents fetch them and inject
+  // current on-page state (titles, meta, headings, app metadata) into the
+  // generation prompt for specific recommendations vs generic advice.
+  website_url: string;
+  app_store_url: string;
+  play_store_url: string;
 };
 
 const DEFAULT: BrandKit = {
@@ -25,6 +31,9 @@ const DEFAULT: BrandKit = {
   brand_voice: [],
   target_audience: "",
   logo_url: null,
+  website_url: "",
+  app_store_url: "",
+  play_store_url: "",
 };
 
 export default function BrandPage() {
@@ -281,6 +290,36 @@ export default function BrandPage() {
               value={brand.target_audience}
               onChange={v => setBrand(p => ({ ...p, target_audience: v }))}
               placeholder="e.g. Indie hackers, solo founders, vibe coders using Cursor and Lovable"
+              last
+            />
+          </div>
+
+          {/* URLs — optional, but unlock specific SEO + ASO recommendations */}
+          <div style={{ background: "#FFFFFF", borderRadius: 20, border: "1.5px solid #EEEEEE", padding: "28px 32px" }}>
+            <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 17, color: "#1F1F1F", marginBottom: 6 }}>
+              URLs (optional)
+            </div>
+            <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", marginBottom: 20, lineHeight: 1.5 }}>
+              Add your live website + app store URLs. When set, the SEO and ASO agents fetch these and analyze your current on-page state to give specific recommendations instead of generic advice.
+            </p>
+
+            <Field
+              label="Website URL"
+              value={brand.website_url}
+              onChange={v => setBrand(p => ({ ...p, website_url: v.trim() }))}
+              placeholder="https://yourapp.com"
+            />
+            <Field
+              label="App Store URL (iOS)"
+              value={brand.app_store_url}
+              onChange={v => setBrand(p => ({ ...p, app_store_url: v.trim() }))}
+              placeholder="https://apps.apple.com/us/app/your-app/id..."
+            />
+            <Field
+              label="Google Play URL (Android)"
+              value={brand.play_store_url}
+              onChange={v => setBrand(p => ({ ...p, play_store_url: v.trim() }))}
+              placeholder="https://play.google.com/store/apps/details?id=com.yourapp"
               last
             />
           </div>

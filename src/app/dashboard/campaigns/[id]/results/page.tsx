@@ -78,6 +78,10 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
   const [narrativeError, setNarrativeError] = useState("");
   const narrativeRef = useRef<HTMLDivElement>(null);
 
+  // User rating (thumbs up/down) — Phase-1 Learning Engine signal
+  const [userRating, setUserRating] = useState<"up" | "down" | null>(null);
+  const [ratingSaving, setRatingSaving] = useState(false);
+
   const supabase = createClient();
 
   // Initial load: campaign + brand kit + kick off metrics fetch if UTM already set
@@ -108,8 +112,35 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
       if (c.utm_campaign_tag) {
         fetchMetrics(c.utm_campaign_tag);
       }
+
+      // Load existing rating (if user has rated this campaign before)
+      fetch(`/api/campaigns/${id}/rate`)
+        .then(r => r.json())
+        .then(data => { if (data?.rating) setUserRating(data.rating); })
+        .catch(() => { /* fail silent — no rating shown */ });
     })();
   }, [id]);
+
+  async function submitRating(rating: "up" | "down") {
+    // Optimistic — update UI immediately, then fire API. If API fails, revert.
+    const previous = userRating;
+    setUserRating(rating);
+    setRatingSaving(true);
+    try {
+      const res = await fetch(`/api/campaigns/${id}/rate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating }),
+      });
+      if (!res.ok) {
+        setUserRating(previous);
+      }
+    } catch {
+      setUserRating(previous);
+    } finally {
+      setRatingSaving(false);
+    }
+  }
 
   async function fetchMetrics(tag: string) {
     if (!tag) return;
@@ -613,7 +644,50 @@ export default function ResultsPage({ params }: { params: Promise<{ id: string }
             Created {new Date(campaign.created_at).toLocaleDateString()} · {campaign.content_type} · {campaign.brand_kit_applied ? "Brand Kit applied" : "No Brand Kit"}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          {/* Rating buttons — thumbs up/down */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: "#F8F8F8", border: "1px solid #EEEEEE",
+            borderRadius: 999, padding: "4px 6px 4px 12px",
+          }}>
+            <span style={{
+              fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#878787",
+              marginRight: 4,
+            }}>Useful?</span>
+            <button
+              onClick={() => submitRating("up")}
+              disabled={ratingSaving}
+              aria-label="Thumbs up"
+              title="Yes, this was useful"
+              style={{
+                width: 30, height: 30, borderRadius: "50%",
+                background: userRating === "up" ? "#E6FAF8" : "transparent",
+                border: userRating === "up" ? "1.5px solid #05AD98" : "1.5px solid transparent",
+                cursor: ratingSaving ? "wait" : "pointer", padding: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 15, lineHeight: 1,
+                color: userRating === "up" ? "#05AD98" : "#878787",
+                transition: "all 0.15s",
+              }}
+            >👍</button>
+            <button
+              onClick={() => submitRating("down")}
+              disabled={ratingSaving}
+              aria-label="Thumbs down"
+              title="No, this missed the mark"
+              style={{
+                width: 30, height: 30, borderRadius: "50%",
+                background: userRating === "down" ? "rgba(226,75,74,0.1)" : "transparent",
+                border: userRating === "down" ? "1.5px solid #E24B4A" : "1.5px solid transparent",
+                cursor: ratingSaving ? "wait" : "pointer", padding: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 15, lineHeight: 1,
+                color: userRating === "down" ? "#E24B4A" : "#878787",
+                transition: "all 0.15s",
+              }}
+            >👎</button>
+          </div>
           <button onClick={handleCsvExport} style={{
             background: "#F8F8F8", color: "#1F1F1F",
             fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,

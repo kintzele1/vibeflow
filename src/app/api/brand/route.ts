@@ -38,6 +38,9 @@ export async function POST(request: Request) {
         brand_voice: body.brand_voice ?? [],
         target_audience: body.target_audience ?? null,
         logo_url: body.logo_url ?? null,
+        website_url: body.website_url ?? null,
+        app_store_url: body.app_store_url ?? null,
+        play_store_url: body.play_store_url ?? null,
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
 

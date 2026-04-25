@@ -556,11 +556,15 @@ export default function CampaignsPage() {
                     }}
                   >✨ Refresh brand</a>
                 )}
-                <a href={`/dashboard/campaigns/${selected.id}/results`} style={{
-                  fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
-                  padding: "8px 16px", color: "#878787", textDecoration: "none",
-                  marginLeft: "auto",
-                }}>
+                <a
+                  href={`/dashboard/campaigns/${selected.id}/results`}
+                  title="View analytics for this campaign. You'll set up a UTM campaign tracking ID here — add it to every shared link so we can pull real GA4 metrics back into this view."
+                  style={{
+                    fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+                    padding: "8px 16px", color: "#878787", textDecoration: "none",
+                    marginLeft: "auto",
+                  }}
+                >
                   View analytics →
                 </a>
               </div>

@@ -117,6 +117,41 @@ export type PostUnit = {
   charCount: number;
 };
 
+/**
+ * Strip markdown formatting from content before sending to a social composer.
+ *
+ * Social composers (X, LinkedIn, Threads, IG, etc.) render plain text, so
+ * `**bold**` shows literal asterisks and `## POST 1` shows a literal hash-and-text.
+ * This helper strips:
+ *   - Markdown headers (lines starting with `# ` through `###### `)
+ *   - **bold** / __bold__ → bold
+ *   - *italic* / _italic_ → italic
+ *   - [text](url) → "text url"
+ *   - Excess blank lines (3+ in a row → 2)
+ *
+ * Hashtags like `#buildingtools` (no space after #) are preserved — they're
+ * intentional content, not markdown.
+ */
+export function stripMarkdownForSocial(text: string): string {
+  if (!text) return text;
+  return text
+    .split("\n")
+    // Strip lines that are markdown headers ("# ", "## ", up to "###### ")
+    .filter(line => !/^\s*#{1,6}\s+\S/.test(line))
+    .join("\n")
+    // Bold + italic via asterisks
+    .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "$1")
+    // Bold + italic via underscores
+    .replace(/__([^_\n]+)__/g, "$1")
+    .replace(/(?<!_)_([^_\n]+)_(?!_)/g, "$1")
+    // Markdown links — keep text + url plain
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 $2")
+    // Collapse 3+ newlines to 2
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export function splitIntoPosts(content: string): PostUnit[] {
   if (!content?.trim()) return [];
 
@@ -133,12 +168,13 @@ export function splitIntoPosts(content: string): PostUnit[] {
   const matches = Array.from(content.matchAll(headerRegex));
 
   if (matches.length < 2) {
-    // Treat as single asset
+    // Treat as single asset — strip markdown so social composers get clean text.
+    const cleaned = stripMarkdownForSocial(content);
     return [{
       label: "Full content",
-      preview: content.slice(0, 120).replace(/\s+/g, " ").trim(),
-      fullText: content.trim(),
-      charCount: content.trim().length,
+      preview: cleaned.slice(0, 120).replace(/\s+/g, " ").trim(),
+      fullText: cleaned,
+      charCount: cleaned.length,
     }];
   }
 
@@ -166,7 +202,10 @@ export function splitIntoPosts(content: string): PostUnit[] {
       }
     }
 
-    const bodyText = bodyLines.join("\n").trim();
+    // Strip markdown so social composers (X, LinkedIn, Threads, etc.) receive
+    // clean plain text. The label keeps emphasis stripped via the headerLine
+    // cleanup above; the body gets full markdown stripping here.
+    const bodyText = stripMarkdownForSocial(bodyLines.join("\n").trim());
     units.push({
       label: headerLine || `Post ${i + 1}`,
       preview: bodyText.slice(0, 120).replace(/\s+/g, " ").trim(),

@@ -179,7 +179,18 @@ export async function POST(request: Request) {
     let brandKitSection = "";
     if (applyBrandKit) {
       const brand = await getBrandKit();
-      if (brand) brandKitSection = formatBrandKitForPrompt(brand) + "\n\n";
+      if (brand) {
+        brandKitSection = formatBrandKitForPrompt(brand) + "\n\n";
+        // If user has a website_url on file, fetch + parse current on-page state
+        // so the SEO agent can give SPECIFIC recommendations vs generic advice.
+        if (brand.website_url) {
+          const { analyzeWebsite, formatWebsiteAnalysisForPrompt } = await import("@/lib/url-analysis");
+          const analysis = await analyzeWebsite(brand.website_url);
+          if (analysis) {
+            brandKitSection += formatWebsiteAnalysisForPrompt(analysis) + "\n\n";
+          }
+        }
+      }
     }
 
     const userPrompt = brandKitSection + typeConfig.prompt(prompt);

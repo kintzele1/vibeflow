@@ -236,8 +236,21 @@ export default function CalendarPage() {
 
       {/* Schedule modal */}
       {schedulingId && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "#FFFFFF", borderRadius: 20, padding: "32px 36px", maxWidth: 400, width: "100%", margin: "0 24px" }}>
+        <div onClick={() => setSchedulingId(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#FFFFFF", borderRadius: 20, padding: "32px 36px", maxWidth: 400, width: "100%", margin: "0 24px", position: "relative" }}>
+            <button
+              onClick={() => setSchedulingId(null)}
+              aria-label="Close"
+              style={{
+                position: "absolute", top: 12, right: 12,
+                width: 32, height: 32, borderRadius: 8,
+                background: "transparent", border: "none", cursor: "pointer",
+                color: "#878787", fontSize: 22, lineHeight: 1, padding: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#F0F0F0"; e.currentTarget.style.color = "#1F1F1F"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#878787"; }}
+            >×</button>
             <h3 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 18, color: "#1F1F1F", marginBottom: 8 }}>
               Schedule campaign
             </h3>
@@ -347,17 +360,32 @@ export default function CalendarPage() {
 
       {/* Multi-post picker modal */}
       {picker && (
-        <div style={{
+        <div onClick={() => setPicker(null)} style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1500,
           padding: 24,
         }}>
-          <div style={{
+          <div onClick={e => e.stopPropagation()} style={{
             background: "#FFFFFF", borderRadius: 20, padding: "28px 32px",
             maxWidth: 560, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column",
             boxShadow: "0 24px 64px rgba(0,0,0,0.15)",
+            position: "relative",
           }}>
-            <div style={{ marginBottom: 16 }}>
+            <button
+              onClick={() => setPicker(null)}
+              aria-label="Close"
+              style={{
+                position: "absolute", top: 12, right: 12,
+                width: 32, height: 32, borderRadius: 8,
+                background: "transparent", border: "none", cursor: "pointer",
+                color: "#878787", fontSize: 22, lineHeight: 1, padding: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                zIndex: 1,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#F0F0F0"; e.currentTarget.style.color = "#1F1F1F"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#878787"; }}
+            >×</button>
+            <div style={{ marginBottom: 16, flexShrink: 0, paddingRight: 32 }}>
               <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 18, color: "#1F1F1F", marginBottom: 6 }}>
                 This campaign has {picker.units.length} posts
               </div>
@@ -366,7 +394,7 @@ export default function CalendarPage() {
               </p>
             </div>
 
-            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
               {picker.units.map((unit, idx) => {
                 // Naively enforce platform limits visually so over-limit posts are flagged.
                 const platform = platformOf(picker.campaign.content_type);
@@ -437,15 +465,29 @@ export default function CalendarPage() {
 
       {/* Suggested-time modal */}
       {suggestionFor && (
-        <div style={{
+        <div onClick={() => setSuggestionFor(null)} style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1500,
         }}>
-          <div style={{
+          <div onClick={e => e.stopPropagation()} style={{
             background: "#FFFFFF", borderRadius: 20, padding: "28px 32px",
             maxWidth: 460, width: "100%", margin: "0 24px",
             boxShadow: "0 24px 64px rgba(0,0,0,0.15)",
+            position: "relative",
           }}>
+            <button
+              onClick={() => setSuggestionFor(null)}
+              aria-label="Close"
+              style={{
+                position: "absolute", top: 12, right: 12,
+                width: 32, height: 32, borderRadius: 8,
+                background: "transparent", border: "none", cursor: "pointer",
+                color: "#878787", fontSize: 22, lineHeight: 1, padding: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#F0F0F0"; e.currentTarget.style.color = "#1F1F1F"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#878787"; }}
+            >×</button>
             <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}>⏰</div>
             <h3 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 20, color: "#1F1F1F", textAlign: "center", marginBottom: 6 }}>
               Suggested posting time

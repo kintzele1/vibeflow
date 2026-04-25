@@ -1,7 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
+import * as Sentry from "@sentry/nextjs";
 import { createClient } from "@/lib/supabase/client";
 import { platformOf, composerInfo, composerUrl, splitIntoPosts, type PostUnit } from "@/lib/platforms";
+
+// Char limits per platform — kept here AND in agent system prompts. If they
+// drift apart, the system prompts win (those control generation), this is
+// just for visual feedback in the picker.
+function platformCharLimit(platform: string): number | null {
+  if (platform === "x" || platform === "twitter") return 280;
+  if (platform === "threads") return 500;
+  if (platform === "linkedin") return 3000;
+  if (platform === "instagram") return 2200;
+  if (platform === "tiktok") return 2200;
+  return null;
+}
 
 type Campaign = {
   id: string;
@@ -392,6 +405,42 @@ export default function CalendarPage() {
               <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", lineHeight: 1.6, margin: 0 }}>
                 Pick the one you want to copy. We'll copy just that post and open {composerInfo(platformOf(picker.campaign.content_type)).platformName} — don't paste the whole campaign into one composer.
               </p>
+              {(() => {
+                const limit = platformCharLimit(platformOf(picker.campaign.content_type));
+                const overLimitCount = limit !== null
+                  ? picker.units.filter(u => u.charCount > limit).length
+                  : 0;
+                if (overLimitCount > 0) {
+                  // Sentry telemetry for over-limit content (Phase B observability)
+                  Sentry.captureMessage(
+                    `Over-limit content detected in picker: ${overLimitCount}/${picker.units.length} posts on ${platformOf(picker.campaign.content_type)} (limit ${limit})`,
+                    {
+                      level: "warning",
+                      tags: {
+                        agent_content_type: picker.campaign.content_type,
+                        platform: platformOf(picker.campaign.content_type),
+                      },
+                      extra: {
+                        overLimitCount,
+                        totalPosts: picker.units.length,
+                        limit,
+                        charCounts: picker.units.map(u => u.charCount),
+                      },
+                    }
+                  );
+                  return (
+                    <div style={{
+                      marginTop: 12, padding: "10px 14px",
+                      background: "#FFF8E1", border: "1px solid rgba(245,158,11,0.35)",
+                      borderRadius: 10,
+                      fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#92670A", lineHeight: 1.55,
+                    }}>
+                      <strong>Heads up:</strong> {overLimitCount === 1 ? "one post exceeds" : `${overLimitCount} posts exceed`} the platform's character limit. We apologize for the inconvenience and are working to resolve suggested-content sizing by platform. Please trim before posting.
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>

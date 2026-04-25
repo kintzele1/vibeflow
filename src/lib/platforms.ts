@@ -21,9 +21,25 @@ export type Platform =
   | "reddit"
   | "facebook"
   | "email"
+  // Ad / PPC platforms — no prefill URLs (each platform's create-campaign
+  // flow is multi-step), so we just copy content + open the admin home page.
+  | "ads_google"
+  | "ads_meta"
+  | "ads_linkedin"
+  | "ads_x"
+  | "ads_tiktok"
   | "generic";
 
 export function platformOf(contentType: string): Platform {
+  // Order matters — PPC types must match BEFORE the broader "linkedin"/"x"
+  // checks below, otherwise `ppc_linkedin` would route to the LinkedIn organic
+  // composer instead of LinkedIn Campaign Manager.
+  if (contentType === "ppc_google") return "ads_google";
+  if (contentType === "ppc_meta") return "ads_meta";
+  if (contentType === "ppc_linkedin") return "ads_linkedin";
+  if (contentType === "ppc_x") return "ads_x";
+  if (contentType === "ppc_tiktok") return "ads_tiktok";
+
   if (contentType.includes("x_post") || contentType === "twitter" || contentType.includes("launch_x_thread")) return "x";
   if (contentType.includes("linkedin")) return "linkedin";
   if (contentType.includes("instagram")) return "instagram";
@@ -64,6 +80,16 @@ export function composerInfo(platform: Platform): ComposerAction {
       return { hasComposer: true, supportsPrefill: false, buttonLabel: "Copy + open Facebook", platformName: "Facebook" };
     case "email":
       return { hasComposer: true, supportsPrefill: true,  buttonLabel: "Copy + open email",    platformName: "Email" };
+    case "ads_google":
+      return { hasComposer: true, supportsPrefill: false, buttonLabel: "Copy + open Google Ads",            platformName: "Google Ads" };
+    case "ads_meta":
+      return { hasComposer: true, supportsPrefill: false, buttonLabel: "Copy + open Meta Ads Manager",      platformName: "Meta Ads Manager" };
+    case "ads_linkedin":
+      return { hasComposer: true, supportsPrefill: false, buttonLabel: "Copy + open LinkedIn Campaign Mgr", platformName: "LinkedIn Campaign Manager" };
+    case "ads_x":
+      return { hasComposer: true, supportsPrefill: false, buttonLabel: "Copy + open X Ads",                 platformName: "X Ads" };
+    case "ads_tiktok":
+      return { hasComposer: true, supportsPrefill: false, buttonLabel: "Copy + open TikTok Ads",            platformName: "TikTok Ads" };
     case "generic":
     default:
       return { hasComposer: false, supportsPrefill: false, buttonLabel: "Copy content",        platformName: "your tool" };
@@ -183,6 +209,17 @@ export function composerUrl(platform: Platform, text: string, title?: string): s
       // Mailto with subject + body (subject = title if provided, else first 60 chars).
       const subject = title ?? text.split("\n")[0].slice(0, 60);
       return `mailto:?subject=${encodeURIComponent(subject)}&body=${t}`;
+    case "ads_google":
+      // Google Ads admin home — user creates new campaign + pastes copy
+      return "https://ads.google.com/aw/campaigns/new";
+    case "ads_meta":
+      return "https://business.facebook.com/adsmanager/manage/campaigns";
+    case "ads_linkedin":
+      return "https://www.linkedin.com/campaignmanager/accounts";
+    case "ads_x":
+      return "https://ads.x.com/";
+    case "ads_tiktok":
+      return "https://ads.tiktok.com/";
     case "generic":
     default:
       return null;

@@ -229,48 +229,78 @@ export default function IntegrationsPage() {
         </div>
       </div>
 
-      {/* Other integrations — static, same as before */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
-        {[
-          { icon: "💳", name: "Stripe",       desc: "Payments, usage tracking, and subscription management.", status: "connected" },
-          { icon: "📡", name: "PostHog",      desc: "Product analytics — pageviews, events, funnels.",       status: "connected" },
-          { icon: "▲",  name: "Vercel",       desc: "Auto-deploy landing page variants directly from VibeFlow.", status: "coming" },
-          { icon: "🐙", name: "GitHub",       desc: "Pull app details and deploy pages from your repos.",   status: "coming" },
-          { icon: "𝕏",  name: "X (Twitter)",  desc: "Schedule and post social content directly.",            status: "coming" },
-          { icon: "in", name: "LinkedIn",     desc: "Publish posts and track engagement.",                   status: "coming" },
-          { icon: "📘", name: "Meta",         desc: "Post to Facebook and Instagram, manage ad campaigns.",  status: "coming" },
-        ].map(item => (
-          <div key={item.name} style={{
-            background: "#FFFFFF", borderRadius: 16, padding: "24px",
-            border: `1px solid ${item.status === "connected" ? "rgba(5,173,152,0.2)" : "#EEEEEE"}`,
-            display: "flex", alignItems: "flex-start", gap: 16,
-          }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-              background: item.status === "connected" ? "#E6FAF8" : "#F8F8F8",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
-            }}>{item.icon}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                <h3 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 15, color: "#1F1F1F" }}>
-                  {item.name}
-                </h3>
-                <span style={{
-                  fontFamily: "var(--font-dm-sans)", fontSize: 11, fontWeight: 500,
-                  padding: "2px 8px", borderRadius: 999,
-                  background: item.status === "connected" ? "#E6FAF8" : "#F0F0F0",
-                  color: item.status === "connected" ? "#05AD98" : "#AAAAAA",
-                }}>
-                  {item.status === "connected" ? "Connected" : "Coming soon"}
-                </span>
+      {/* Grouped integrations: Advertising → Social → Other.
+          GA4 stays separately on top above this since it's the only dynamic card. */}
+      {[
+        {
+          label: "Advertising",
+          items: [
+            { icon: "🎯", name: "Google Ads",   desc: "Complete Google Ads campaigns — keywords, headlines, descriptions, targeting.", status: "coming" },
+            { icon: "📘", name: "Meta Ads",     desc: "Facebook + Instagram ad campaigns — copy, targeting, creative briefs.",       status: "coming" },
+            { icon: "in", name: "LinkedIn Ads", desc: "B2B campaign manager — copy, targeting, audience setup.",                      status: "coming" },
+            { icon: "𝕏",  name: "X Ads",        desc: "Promoted posts and ad campaigns directly on X.",                                status: "coming" },
+            { icon: "🎵", name: "TikTok Ads",   desc: "Spark Ads, Top View, In-Feed campaigns with on-brand creative.",                status: "coming" },
+          ],
+        },
+        {
+          label: "Social",
+          items: [
+            { icon: "𝕏",  name: "X (Twitter)",                  desc: "Schedule and post social content directly.",                            status: "coming" },
+            { icon: "in", name: "LinkedIn",                     desc: "Publish posts to your profile and Company Pages, track engagement.",   status: "coming" },
+            { icon: "📘", name: "Meta (Facebook + Instagram)",  desc: "Organic posting to Facebook Pages and Instagram Business accounts.",   status: "coming" },
+          ],
+        },
+        {
+          label: "Other",
+          items: [
+            { icon: "💳", name: "Stripe",  desc: "Payments, usage tracking, and subscription management.",     status: "connected" },
+            { icon: "📡", name: "PostHog", desc: "Product analytics — pageviews, events, funnels.",            status: "connected" },
+            { icon: "▲",  name: "Vercel",  desc: "Auto-deploy landing page variants directly from VibeFlow.",  status: "coming" },
+            { icon: "🐙", name: "GitHub",  desc: "Pull app details and deploy pages from your repos.",         status: "coming" },
+          ],
+        },
+      ].map(section => (
+        <div key={section.label} style={{ marginBottom: 32 }}>
+          <h2 style={{
+            fontFamily: "var(--font-dm-sans)", fontSize: 11, fontWeight: 600,
+            letterSpacing: "0.1em", textTransform: "uppercase",
+            color: "#AAAAAA", marginBottom: 14, marginTop: 4,
+          }}>{section.label}</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 16 }}>
+            {section.items.map(item => (
+              <div key={item.name} style={{
+                background: "#FFFFFF", borderRadius: 16, padding: "24px",
+                border: `1px solid ${item.status === "connected" ? "rgba(5,173,152,0.2)" : "#EEEEEE"}`,
+                display: "flex", alignItems: "flex-start", gap: 16,
+              }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                  background: item.status === "connected" ? "#E6FAF8" : "#F8F8F8",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
+                }}>{item.icon}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 8 }}>
+                    <h3 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 15, color: "#1F1F1F" }}>
+                      {item.name}
+                    </h3>
+                    <span style={{
+                      fontFamily: "var(--font-dm-sans)", fontSize: 11, fontWeight: 500,
+                      padding: "2px 8px", borderRadius: 999, flexShrink: 0,
+                      background: item.status === "connected" ? "#E6FAF8" : "#F0F0F0",
+                      color: item.status === "connected" ? "#05AD98" : "#AAAAAA",
+                    }}>
+                      {item.status === "connected" ? "Connected" : "Coming soon"}
+                    </span>
+                  </div>
+                  <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", lineHeight: 1.6 }}>
+                    {item.desc}
+                  </p>
+                </div>
               </div>
-              <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#878787", lineHeight: 1.6 }}>
-                {item.desc}
-              </p>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -40,10 +40,20 @@ export function Hero() {
         {/* Subheadline */}
         <p style={{
           fontFamily: "var(--font-dm-sans)", fontSize: "clamp(16px, 2vw, 20px)",
-          color: "#878787", lineHeight: 1.6, marginBottom: 48,
-          maxWidth: 560, margin: "0 auto 48px",
+          color: "#555555", lineHeight: 1.6, marginBottom: 16,
+          maxWidth: 720, margin: "0 auto 16px",
         }}>
-          Your AI-powered Marketing Operating System — from launch campaign to ongoing growth, all from a single prompt.
+          The AI Marketing Operating System that generates complete, coordinated campaigns across SEO, PPC, Social, Email, Affiliate, Community, Outbound, and more — all automatically styled with your logo, colors, tagline, and exact vibe.
+        </p>
+
+        {/* Supporting line — speed + learning hook */}
+        <p style={{
+          fontFamily: "var(--font-dm-sans)", fontSize: "clamp(14px, 1.6vw, 16px)",
+          color: "#878787", lineHeight: 1.6, marginBottom: 40,
+          maxWidth: 560, margin: "0 auto 40px",
+          fontWeight: 500,
+        }}>
+          Campaigns in under 90 seconds. Gets smarter with every result.
         </p>
 
         {/* CTA buttons */}
@@ -51,14 +61,15 @@ export function Hero() {
           <a href="/login" style={{
             background: "#05AD98", color: "#FFFFFF",
             fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 16,
-            padding: "14px 32px", borderRadius: 999, textDecoration: "none",
-          }}>Start Free — No Credit Card</a>
+            padding: "14px 28px", borderRadius: 999, textDecoration: "none",
+            textAlign: "center",
+          }}>Try It Free – Generate Your First Campaign</a>
           <a href="#how-it-works" style={{
             background: "#F8F8F8", color: "#1F1F1F",
             fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 16,
-            padding: "14px 32px", borderRadius: 999, textDecoration: "none",
+            padding: "14px 28px", borderRadius: 999, textDecoration: "none",
             border: "1px solid #EEEEEE",
-          }}>See how it works →</a>
+          }}>Watch 60-second demo →</a>
         </div>
 
         {/* Demo prompt box */}

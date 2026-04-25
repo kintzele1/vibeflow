@@ -1,50 +1,49 @@
 "use client";
+import {
+  Palette, MessagesSquare, Send, Search, Target,
+  Share2, CalendarCheck, Sparkles,
+} from "lucide-react";
 
 const FEATURES = [
   {
-    icon: "✍️",
-    title: "Content Marketing",
-    body: "Blog posts that rank, newsletters people open, and threads that go viral — all written in your voice, on your brand, in minutes.",
+    Icon: Palette,
+    title: "Brand Kit",
+    body: "Upload your logo, colors, tagline & vibe once. Everything we create auto-applies it forever. Zero manual edits.",
   },
   {
-    icon: "📱",
-    title: "Social Media",
-    body: "Platform-native posts for X, LinkedIn, TikTok, Instagram, and Reddit — with captions, hashtags, and scheduling suggestions built in.",
+    Icon: MessagesSquare,
+    title: "Community & Earned Media",
+    body: "Helps you engage on Reddit and Hacker News with natural, high-quality posts and replies that match the community tone.",
   },
   {
-    icon: "🔍",
-    title: "SEO That Ranks",
-    body: "Keyword research, on-page optimization, technical fixes, and content briefs — all on-brand and optimized for AI search too.",
+    Icon: Send,
+    title: "Outbound / GTM Agent",
+    body: "Builds warm, personalized email + LinkedIn outreach sequences — all perfectly on-brand.",
   },
   {
-    icon: "🎯",
-    title: "Paid Ads",
-    body: "Google, Meta, LinkedIn, X, and TikTok ads with headlines, copy, targeting suggestions, and budget allocation — ready to launch.",
+    Icon: Search,
+    title: "SEO + GSEO",
+    body: "Keyword research, content briefs, and optimization that ranks in Google and AI engines like ChatGPT, Perplexity, and Claude.",
   },
   {
-    icon: "🎨",
-    title: "Visual Assets",
-    body: "AI-generated images, carousels, thumbnails, memes, and demo GIFs — all matching your vibe so your feed looks like a real brand.",
+    Icon: Target,
+    title: "PPC & ASO",
+    body: "Complete ad sets for Google, Meta, LinkedIn & TikTok + App Store optimization that actually converts.",
   },
   {
-    icon: "📊",
-    title: "Analytics",
-    body: "Unified GA4 dashboard with predictive ROI, automated recommendations, and plain-English insights — no analyst required.",
+    Icon: Share2,
+    title: "Social + Content",
+    body: "Platform-specific posts, threads, carousels, emails, and blogs — all consistent and ready to schedule.",
   },
   {
-    icon: "📧",
-    title: "Email Marketing",
-    body: "Welcome flows, onboarding sequences, upsell campaigns, and re-engagement drips — personalized and ready to plug into any ESP.",
+    Icon: CalendarCheck,
+    title: "Marketing Calendar & Results",
+    body: "Drag-and-drop scheduling with smart timing suggestions + unified analytics dashboard with AI insights.",
   },
   {
-    icon: "📲",
-    title: "App Store (ASO)",
-    body: "App Store and Google Play titles, keywords, descriptions, and screenshot captions optimized to rank and convert — for both stores.",
-  },
-  {
-    icon: "🚀",
-    title: "Community & Launch",
-    body: "Product Hunt launch kits, influencer outreach templates, Discord/Reddit community ideas, and PR pitches — all done for you.",
+    Icon: Sparkles,
+    title: "Self-Improving Engine",
+    body: "Learns from your real campaign performance (anonymized & opt-in) so every future campaign gets better — higher engagement, better conversions.",
   },
 ];
 
@@ -53,66 +52,92 @@ export function Features() {
     <section id="features" style={{ padding: "100px 24px", background: "#F8F8F8" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
 
-        <div style={{ textAlign: "center", marginBottom: 72 }}>
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
           <div style={{
             display: "inline-block", background: "#EEEEFF", color: "#6060CC",
             fontFamily: "var(--font-dm-sans)", fontSize: 12, fontWeight: 500,
             letterSpacing: "0.1em", textTransform: "uppercase",
             padding: "6px 16px", borderRadius: 999, marginBottom: 20,
-          }}>Full Coverage</div>
+          }}>Agents</div>
           <h2 style={{
             fontFamily: "var(--font-syne)", fontWeight: 700,
             fontSize: "clamp(28px, 4vw, 44px)", letterSpacing: "-0.02em",
-            color: "#1F1F1F", maxWidth: 560, margin: "0 auto", lineHeight: 1.15,
+            color: "#1F1F1F", maxWidth: 720, margin: "0 auto 20px", lineHeight: 1.15,
           }}>
-            Every channel. Every format.{" "}
-            <span style={{ color: "#05AD98" }}>All on-brand.</span>
+            Everything your marketing needs.{" "}
+            <span style={{ color: "#05AD98" }}>One system.</span>
           </h2>
+          <p style={{
+            fontFamily: "var(--font-dm-sans)", fontSize: 17, color: "#555555",
+            maxWidth: 640, margin: "0 auto", lineHeight: 1.65,
+          }}>
+            Our multi-agent system works together so every piece of your campaign feels like it came from the same brilliant team — perfectly on-brand.
+          </p>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
-          {FEATURES.map((feature) => (
-            <div
-              key={feature.title}
-              style={{
-                background: "#FFFFFF", borderRadius: 16, padding: "32px 28px",
-                border: "1px solid #EEEEEE",
-                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
-                transition: "border-color 0.2s, transform 0.2s, box-shadow 0.2s",
-                cursor: "default",
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget;
-                el.style.borderColor = "#05AD98";
-                el.style.transform = "translateY(-4px)";
-                el.style.boxShadow = "0 12px 40px rgba(5,173,152,0.12)";
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget;
-                el.style.borderColor = "#EEEEEE";
-                el.style.transform = "translateY(0)";
-                el.style.boxShadow = "0 2px 12px rgba(0,0,0,0.04)";
-              }}
-            >
-              <div style={{ fontSize: 28, marginBottom: 16, lineHeight: 1 }}>{feature.icon}</div>
-              <h3 style={{
-                fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 17,
-                color: "#1F1F1F", marginBottom: 10, letterSpacing: "-0.01em",
-              }}>{feature.title}</h3>
-              <p style={{
-                fontFamily: "var(--font-dm-sans)", fontSize: 14,
-                color: "#666666", lineHeight: 1.7,
-              }}>{feature.body}</p>
-            </div>
-          ))}
+          {FEATURES.map((feature) => {
+            const Icon = feature.Icon;
+            return (
+              <div
+                key={feature.title}
+                style={{
+                  background: "#FFFFFF", borderRadius: 16, padding: "32px 28px",
+                  border: "1px solid #EEEEEE",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+                  transition: "border-color 0.2s, transform 0.2s, box-shadow 0.2s",
+                  cursor: "default",
+                }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget;
+                  el.style.borderColor = "#05AD98";
+                  el.style.transform = "translateY(-4px)";
+                  el.style.boxShadow = "0 12px 40px rgba(5,173,152,0.12)";
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget;
+                  el.style.borderColor = "#EEEEEE";
+                  el.style.transform = "translateY(0)";
+                  el.style.boxShadow = "0 2px 12px rgba(0,0,0,0.04)";
+                }}
+              >
+                <div style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  width: 44, height: 44, borderRadius: 12,
+                  background: "#E6FAF8", marginBottom: 16,
+                }}>
+                  <Icon size={22} color="#05AD98" strokeWidth={2} />
+                </div>
+                <h3 style={{
+                  fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 17,
+                  color: "#1F1F1F", marginBottom: 10, letterSpacing: "-0.01em",
+                }}>{feature.title}</h3>
+                <p style={{
+                  fontFamily: "var(--font-dm-sans)", fontSize: 14,
+                  color: "#666666", lineHeight: 1.7,
+                }}>{feature.body}</p>
+              </div>
+            );
+          })}
         </div>
 
-        <p style={{
-          textAlign: "center", fontFamily: "var(--font-dm-sans)",
-          fontSize: 14, color: "#AAAAAA", marginTop: 48,
-        }}>
-          All agents collaborate — SEO feeds PPC, content feeds social. One vibe, everywhere.
-        </p>
+        {/* Section CTA */}
+        <div style={{ textAlign: "center", marginTop: 56 }}>
+          <p style={{
+            fontFamily: "var(--font-dm-sans)", fontSize: 16, color: "#555555",
+            marginBottom: 16,
+          }}>
+            Ready to see it in action?
+          </p>
+          <a href="/login" style={{
+            display: "inline-block",
+            background: "#05AD98", color: "#FFFFFF",
+            fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 16,
+            padding: "14px 32px", borderRadius: 999, textDecoration: "none",
+          }}>
+            Generate Your First Campaign — Free
+          </a>
+        </div>
       </div>
     </section>
   );

@@ -1,3 +1,5 @@
+import { Check } from "lucide-react";
+
 export function MarketingOS() {
   const insights = [
     { label: "Twitter thread outperforming LinkedIn 3:1", icon: "↑", color: "#05AD98" },
@@ -6,12 +8,19 @@ export function MarketingOS() {
     { label: "Best time to post: Tuesday 9am", icon: "✦", color: "#6060CC" },
   ];
 
+  const differentiators = [
+    "A self-improving Learning Engine that gets better from your actual performance",
+    "Powerful Community tools for Reddit & Hacker News",
+    "Warm outbound & GTM sequences",
+    "Smart Marketing Calendar + real results tracking",
+  ];
+
   return (
     <section style={{ padding: "100px 24px", background: "#F8F8F8" }}>
-      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+      <div style={{ maxWidth: 760, margin: "0 auto" }}>
 
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 64 }}>
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
           <div style={{
             display: "inline-block", background: "#1F1F1F", color: "#FFFFFF",
             fontFamily: "var(--font-dm-sans)", fontSize: 11, fontWeight: 600,
@@ -21,36 +30,58 @@ export function MarketingOS() {
           <h2 style={{
             fontFamily: "var(--font-syne)", fontWeight: 700,
             fontSize: "clamp(28px, 4vw, 44px)", letterSpacing: "-0.02em", color: "#1F1F1F",
-            lineHeight: 1.2, marginBottom: 16,
+            lineHeight: 1.2,
           }}>
-            Not just a launch tool.<br />
-            <span style={{ color: "#05AD98" }}>Your entire marketing system.</span>
+            Marketing that finally <span style={{ color: "#05AD98" }}>matches your speed.</span>
           </h2>
-          <p style={{ fontFamily: "var(--font-dm-sans)", fontSize: 17, color: "#878787", maxWidth: 520, margin: "0 auto" }}>
-            Plan, generate, schedule, and track every campaign — all in one place, all perfectly on-brand.
+        </div>
+
+        {/* Body copy */}
+        <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 17, color: "#333333", lineHeight: 1.75, marginBottom: 32 }}>
+          <p style={{ margin: 0, marginBottom: 18 }}>
+            Most AI tools spit out generic content. VibeFlow is different. You upload your brand once. We remember it forever.
+          </p>
+          <p style={{ margin: 0, marginBottom: 18 }}>
+            One natural language prompt gives you a full marketing system — not just content, but a complete, on-brand campaign engine that includes:
+          </p>
+
+          {/* Bullets — teal checkmarks */}
+          <ul style={{ listStyle: "none", padding: 0, margin: "20px 0 24px" }}>
+            {differentiators.map(item => (
+              <li key={item} style={{
+                display: "flex", alignItems: "flex-start", gap: 12,
+                padding: "10px 0",
+              }}>
+                <span style={{
+                  flexShrink: 0, marginTop: 4,
+                  width: 22, height: 22, borderRadius: "50%",
+                  background: "#E6FAF8", display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Check size={13} color="#05AD98" strokeWidth={3} />
+                </span>
+                <span style={{ color: "#1F1F1F" }}>{item}</span>
+              </li>
+            ))}
+          </ul>
+
+          <p style={{ margin: 0, marginBottom: 0 }}>
+            No more tone-switching. No more manual branding. No more marketing bottlenecks.
           </p>
         </div>
 
-        {/* 3 pillars */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 48 }}>
-          {[
-            { num: "01", title: "Generate", desc: "One prompt creates a full campaign across every channel — copy, social, ads, email, SEO." },
-            { num: "02", title: "Schedule", desc: "Drag campaigns onto your marketing calendar. See the full month at a glance." },
-            { num: "03", title: "Optimize", desc: "Flip on the Learning Engine. Every campaign learns from the last one. Optimization, stupid simple." },
-          ].map(p => (
-            <div key={p.title} style={{
-              background: "#FFFFFF", borderRadius: 16, padding: "28px 24px",
-              border: "1px solid #EEEEEE",
-              boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
-            }}>
-              <div style={{
-                fontFamily: "var(--font-dm-sans)", fontSize: 11, fontWeight: 700,
-                color: "#05AD98", letterSpacing: "0.08em", marginBottom: 12,
-              }}>{p.num}</div>
-              <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 20, color: "#1F1F1F", marginBottom: 10 }}>{p.title}</div>
-              <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 15, color: "#878787", lineHeight: 1.65 }}>{p.desc}</div>
-            </div>
-          ))}
+        {/* Built for builders — emphasis */}
+        <div style={{
+          textAlign: "center", padding: "32px 0",
+          borderTop: "1px solid #EEEEEE", borderBottom: "1px solid #EEEEEE",
+          marginBottom: 56,
+        }}>
+          <p style={{
+            fontFamily: "var(--font-syne)", fontWeight: 700,
+            fontSize: "clamp(22px, 3vw, 28px)", color: "#1F1F1F",
+            letterSpacing: "-0.02em", margin: 0,
+          }}>
+            Built for founders and teams who <span style={{ color: "#05AD98" }}>ship fast.</span>
+          </p>
         </div>
 
         {/* Analytics mockup */}

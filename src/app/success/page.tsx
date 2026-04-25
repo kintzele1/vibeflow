@@ -1,12 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SuccessPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
   const supabase = createClient();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAuthed(!!user);
+      setAuthChecked(true);
+    });
+  }, []);
 
   async function handleMagicLink() {
     if (!email.trim() || loading) return;
@@ -70,100 +79,145 @@ export default function SuccessPage() {
             Payment successful!
           </h1>
 
-          <p style={{
-            fontFamily: "var(--font-dm-sans)", fontSize: 16, color: "#878787",
-            lineHeight: 1.6, marginBottom: 32,
-          }}>
-            Your searches are ready. Sign in or create your account to start generating campaigns.
-          </p>
-
-          {!sent ? (
+          {!authChecked ? (
+            <p style={{
+              fontFamily: "var(--font-dm-sans)", fontSize: 16, color: "#878787",
+              lineHeight: 1.6, marginBottom: 32,
+            }}>
+              Loading…
+            </p>
+          ) : isAuthed ? (
             <>
-              {/* Magic link */}
-              <div style={{ marginBottom: 16 }}>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleMagicLink()}
-                  placeholder="Enter your email"
-                  style={{
-                    width: "100%", padding: "14px 18px",
-                    borderRadius: 12, border: "1.5px solid #EEEEEE",
-                    fontFamily: "var(--font-dm-sans)", fontSize: 15, color: "#1F1F1F",
-                    outline: "none", marginBottom: 10,
-                    transition: "border-color 0.15s",
-                  }}
-                  onFocus={e => e.currentTarget.style.borderColor = "#05AD98"}
-                  onBlur={e => e.currentTarget.style.borderColor = "#EEEEEE"}
-                />
-                <button
-                  onClick={handleMagicLink}
-                  disabled={!email.trim() || loading}
-                  style={{
-                    width: "100%", padding: "14px",
-                    background: !email.trim() ? "#CCCCCC" : "#05AD98",
-                    color: "#FFFFFF", borderRadius: 12, border: "none",
-                    fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 15,
-                    cursor: !email.trim() ? "not-allowed" : "pointer",
-                    transition: "background 0.15s",
-                  }}
-                >
-                  {loading ? "Sending..." : "Continue with Email →"}
-                </button>
-              </div>
-
-              {/* Divider */}
-              <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0" }}>
-                <div style={{ flex: 1, height: 1, background: "#EEEEEE" }} />
-                <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#AAAAAA" }}>or</span>
-                <div style={{ flex: 1, height: 1, background: "#EEEEEE" }} />
-              </div>
-
-              {/* OAuth buttons */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <button onClick={handleGoogle} style={{
-                  width: "100%", padding: "13px",
-                  background: "#FFFFFF", border: "1.5px solid #EEEEEE",
-                  borderRadius: 12, fontFamily: "var(--font-dm-sans)", fontWeight: 500,
-                  fontSize: 15, color: "#1F1F1F", cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                }}>
-                  <span>🔵</span> Continue with Google
-                </button>
-                <button onClick={handleGitHub} style={{
-                  width: "100%", padding: "13px",
-                  background: "#1F1F1F", border: "none",
-                  borderRadius: 12, fontFamily: "var(--font-dm-sans)", fontWeight: 500,
-                  fontSize: 15, color: "#FFFFFF", cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                }}>
-                  <span>⚫</span> Continue with GitHub
-                </button>
-              </div>
+              <p style={{
+                fontFamily: "var(--font-dm-sans)", fontSize: 16, color: "#878787",
+                lineHeight: 1.6, marginBottom: 32,
+              }}>
+                Your searches are ready. Head back to the dashboard and start generating.
+              </p>
+              <a
+                href="/dashboard"
+                style={{
+                  display: "inline-block", width: "100%",
+                  padding: "14px",
+                  background: "#05AD98", color: "#FFFFFF",
+                  borderRadius: 12, textDecoration: "none",
+                  fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 15,
+                  boxSizing: "border-box",
+                }}
+              >
+                Continue to Dashboard →
+              </a>
+              <a
+                href="/dashboard/billing"
+                style={{
+                  display: "inline-block", marginTop: 12,
+                  fontFamily: "var(--font-dm-sans)", fontSize: 13,
+                  color: "#878787", textDecoration: "none",
+                }}
+              >
+                View billing details
+              </a>
             </>
           ) : (
-            <div style={{
-              background: "#E6FAF8", borderRadius: 14, padding: "24px",
-              border: "1px solid rgba(5,173,152,0.2)",
-            }}>
-              <div style={{ fontSize: 32, marginBottom: 12 }}>📧</div>
-              <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 18, color: "#05AD98", marginBottom: 8 }}>
-                Check your email!
-              </div>
-              <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#05AD98", opacity: 0.8 }}>
-                We sent a magic link to <strong>{email}</strong>. Click it to access your dashboard.
-              </div>
-            </div>
+            <>
+              <p style={{
+                fontFamily: "var(--font-dm-sans)", fontSize: 16, color: "#878787",
+                lineHeight: 1.6, marginBottom: 32,
+              }}>
+                Your searches are ready. Sign in or create your account to start generating campaigns.
+              </p>
+
+              {!sent ? (
+                <>
+                  {/* Magic link */}
+                  <div style={{ marginBottom: 16 }}>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handleMagicLink()}
+                      placeholder="Enter your email"
+                      style={{
+                        width: "100%", padding: "14px 18px",
+                        borderRadius: 12, border: "1.5px solid #EEEEEE",
+                        fontFamily: "var(--font-dm-sans)", fontSize: 15, color: "#1F1F1F",
+                        outline: "none", marginBottom: 10,
+                        transition: "border-color 0.15s",
+                      }}
+                      onFocus={e => e.currentTarget.style.borderColor = "#05AD98"}
+                      onBlur={e => e.currentTarget.style.borderColor = "#EEEEEE"}
+                    />
+                    <button
+                      onClick={handleMagicLink}
+                      disabled={!email.trim() || loading}
+                      style={{
+                        width: "100%", padding: "14px",
+                        background: !email.trim() ? "#CCCCCC" : "#05AD98",
+                        color: "#FFFFFF", borderRadius: 12, border: "none",
+                        fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 15,
+                        cursor: !email.trim() ? "not-allowed" : "pointer",
+                        transition: "background 0.15s",
+                      }}
+                    >
+                      {loading ? "Sending..." : "Continue with Email →"}
+                    </button>
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0" }}>
+                    <div style={{ flex: 1, height: 1, background: "#EEEEEE" }} />
+                    <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#AAAAAA" }}>or</span>
+                    <div style={{ flex: 1, height: 1, background: "#EEEEEE" }} />
+                  </div>
+
+                  {/* OAuth buttons */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <button onClick={handleGoogle} style={{
+                      width: "100%", padding: "13px",
+                      background: "#FFFFFF", border: "1.5px solid #EEEEEE",
+                      borderRadius: 12, fontFamily: "var(--font-dm-sans)", fontWeight: 500,
+                      fontSize: 15, color: "#1F1F1F", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                    }}>
+                      <span>🔵</span> Continue with Google
+                    </button>
+                    <button onClick={handleGitHub} style={{
+                      width: "100%", padding: "13px",
+                      background: "#1F1F1F", border: "none",
+                      borderRadius: 12, fontFamily: "var(--font-dm-sans)", fontWeight: 500,
+                      fontSize: 15, color: "#FFFFFF", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                    }}>
+                      <span>⚫</span> Continue with GitHub
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div style={{
+                  background: "#E6FAF8", borderRadius: 14, padding: "24px",
+                  border: "1px solid rgba(5,173,152,0.2)",
+                }}>
+                  <div style={{ fontSize: 32, marginBottom: 12 }}>📧</div>
+                  <div style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 18, color: "#05AD98", marginBottom: 8 }}>
+                    Check your email!
+                  </div>
+                  <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#05AD98", opacity: 0.8 }}>
+                    We sent a magic link to <strong>{email}</strong>. Click it to access your dashboard.
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        <p style={{
-          fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#AAAAAA",
-          marginTop: 24,
-        }}>
-          Already have an account? <a href="/login" style={{ color: "#05AD98", textDecoration: "none" }}>Sign in</a>
-        </p>
+        {authChecked && !isAuthed && (
+          <p style={{
+            fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#AAAAAA",
+            marginTop: 24,
+          }}>
+            Already have an account? <a href="/login" style={{ color: "#05AD98", textDecoration: "none" }}>Sign in</a>
+          </p>
+        )}
       </div>
     </div>
   );

@@ -106,6 +106,72 @@ VISUAL DIRECTION
 One paragraph on color palette, type treatment, device frame choice, and background style — consistent with brand kit if applied. Include a specific recommendation on whether to use real device frames, stylized illustrations, or abstract backgrounds.`,
   },
 
+  evaluate_app_store: {
+    label: "Evaluate Your App Store Listing",
+    requiresAppStoreUrl: true,
+    prompt: (app: string) => `You are evaluating the user's CURRENT App Store listing. The listing's live state has been fetched and is provided above (in the APP STORE LISTING STATE section). Use that snapshot as ground truth.
+
+User's app context: ${app}
+
+Produce a SPECIFIC, evidence-based evaluation. Quote the current values from the snapshot when calling out issues — generic advice without referencing actual current state is unacceptable.
+
+Return seven sections, clearly labeled:
+
+WHAT'S WORKING
+3 specific things their current listing is doing right. For each, quote the exact current value from the snapshot.
+
+WHAT'S MISSING OR WEAK
+5 specific issues found in the snapshot. For each: quote the current value (or "MISSING"), explain why it's a problem for App Store ranking or conversion.
+
+REWRITE — APP STORE TITLE
+Format: "Current: [exact current title from snapshot]" → "Recommended: [your rewrite, exactly 30 chars or fewer]" → "Why: [keyword reasoning]". Note: Apple weighs the first 15 characters most heavily for keyword ranking.
+
+REWRITE — APP STORE SUBTITLE
+Same format. Exactly 30 chars or fewer. Should complement (not repeat) the title and surface a secondary keyword.
+
+REWRITE — PROMOTIONAL TEXT
+Same format. Under 170 characters. Editable without resubmission — best used for time-limited offers or seasonal positioning.
+
+DESCRIPTION HOOK FIX
+Current first 3 lines from the snapshot (or MISSING). Recommended rewrite for the above-the-fold hook (the only text 70% of visitors read). Each line under 80 characters.
+
+PRIORITY FIXES
+3 highest-impact changes, ranked by effort/impact ratio. Each: what to do, why it matters, estimated effort (15 min / 1 hr / half day).`,
+  },
+
+  evaluate_play_store: {
+    label: "Evaluate Your Google Play Listing",
+    requiresPlayStoreUrl: true,
+    prompt: (app: string) => `You are evaluating the user's CURRENT Google Play listing. The listing's live state has been fetched and is provided above (in the APP STORE LISTING STATE section — the snapshot was captured from a Play Store URL). Use that snapshot as ground truth.
+
+User's app context: ${app}
+
+Produce a SPECIFIC, evidence-based evaluation. Quote the current values from the snapshot when calling out issues. Note: Google Play indexes from title, short description, and long description — keyword density across those three matters more than a separate keyword field.
+
+Return seven sections, clearly labeled:
+
+WHAT'S WORKING
+3 specific things their current listing is doing right. For each, quote the exact current value from the snapshot.
+
+WHAT'S MISSING OR WEAK
+5 specific issues found in the snapshot. For each: quote the current value (or "MISSING"), explain why it's a problem for Play Store ranking or conversion.
+
+REWRITE — PLAY STORE TITLE
+Format: "Current: [exact current title from snapshot]" → "Recommended: [your rewrite, 30 chars or fewer]" → "Why: [keyword reasoning]". Note: Google Play rewards keyword density in the title differently than Apple — adjust tone accordingly.
+
+REWRITE — SHORT DESCRIPTION
+Same format. Exactly 80 chars or fewer. This appears above the "Read more" fold on store listings and is heavily indexed.
+
+DESCRIPTION HOOK FIX
+Current first 3 lines from the snapshot (or MISSING). Recommended rewrite for the above-the-fold hook. Each line under 80 characters.
+
+KEYWORD DENSITY PLAN
+Based on what's currently in the listing, list 8-12 keywords to weave into title + short description + long description with target density (mentions per 1000 characters). Flag which 3-4 should appear in the title.
+
+PRIORITY FIXES
+3 highest-impact changes, ranked by effort/impact ratio. Each: what to do, why it matters, estimated effort (15 min / 1 hr / half day).`,
+  },
+
   preview_video: {
     label: "App Preview Video",
     prompt: (app: string) => `Write a complete 30-second App Store + Google Play app preview video script for: ${app}
@@ -181,38 +247,54 @@ export async function POST(request: Request) {
         return new Response(JSON.stringify({
           error: "free_limit",
           agent: "aso",
-          message: "You've used your free ASO generation. Upgrade to the Launch Kit ($49) for 100 searches across every agent.",
+          message: "You've used your free ASO generation. Upgrade to the Launch Kit ($49.99) for 100 searches across every agent.",
         }), { status: 402, headers: { "Content-Type": "application/json" } });
       }
     } else if (usage.searches_remaining <= 0) {
-      return new Response(JSON.stringify({ error: "no_searches", message: "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($299 for 1,200 searches) or buy another Launch Kit ($49 for 100) to keep generating." }),
+      return new Response(JSON.stringify({ error: "no_searches", message: "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($99.99 for 1,200 searches) or buy another Launch Kit ($49.99 for 100) to keep generating." }),
         { status: 402, headers: { "Content-Type": "application/json" } });
     }
 
     const typeConfig = ASO_TYPES[asoType as keyof typeof ASO_TYPES];
     if (!typeConfig) return new Response("Invalid ASO type", { status: 400 });
 
+    // Brand kit application is independent of subtype — applies if user toggled it.
     let brandKitSection = "";
     if (applyBrandKit) {
       const brand = await getBrandKit();
-      if (brand) {
-        brandKitSection = formatBrandKitForPrompt(brand) + "\n\n";
-        // If user has app store URL(s) on file, fetch + parse current listing(s)
-        // so the ASO agent can give SPECIFIC recommendations vs generic advice.
-        // Both stores are fetched in parallel; either or both may be present.
-        if (brand.app_store_url || brand.play_store_url) {
-          const { analyzeAppStore, formatAppStoreAnalysisForPrompt } = await import("@/lib/url-analysis");
-          const [appleAnalysis, googleAnalysis] = await Promise.all([
-            brand.app_store_url ? analyzeAppStore(brand.app_store_url) : null,
-            brand.play_store_url ? analyzeAppStore(brand.play_store_url) : null,
-          ]);
-          if (appleAnalysis) brandKitSection += formatAppStoreAnalysisForPrompt(appleAnalysis) + "\n\n";
-          if (googleAnalysis) brandKitSection += formatAppStoreAnalysisForPrompt(googleAnalysis) + "\n\n";
-        }
-      }
+      if (brand) brandKitSection = formatBrandKitForPrompt(brand) + "\n\n";
     }
 
-    const userPrompt = brandKitSection + typeConfig.prompt(prompt);
+    // Store-listing analysis runs ONLY for the evaluate-* subtypes — those are
+    // explicitly opt-in evaluations of the user's existing live listing. For
+    // other ASO subtypes (title_subtitle, description, keywords, screenshots,
+    // preview_video), generic advice is the right output.
+    let listingAnalysisSection = "";
+    if (asoType === "evaluate_app_store" || asoType === "evaluate_play_store") {
+      const brandForUrl = await getBrandKit();
+      const isApple = asoType === "evaluate_app_store";
+      const storeUrl = isApple ? brandForUrl?.app_store_url : brandForUrl?.play_store_url;
+      const storeName = isApple ? "App Store" : "Google Play";
+      const fieldName = isApple ? "App Store URL" : "Play Store URL";
+
+      if (!storeUrl) {
+        return new Response(JSON.stringify({
+          error: "missing_store_url",
+          message: `This evaluation needs your ${fieldName}. Add it on the Brand Kit page, then come back.`,
+        }), { status: 400, headers: { "Content-Type": "application/json" } });
+      }
+      const { analyzeAppStore, formatAppStoreAnalysisForPrompt } = await import("@/lib/url-analysis");
+      const analysis = await analyzeAppStore(storeUrl);
+      if (!analysis) {
+        return new Response(JSON.stringify({
+          error: "store_unreachable",
+          message: `Couldn't fetch your ${storeName} listing at ${storeUrl}. Check the URL is live and accessible, then try again.`,
+        }), { status: 400, headers: { "Content-Type": "application/json" } });
+      }
+      listingAnalysisSection = formatAppStoreAnalysisForPrompt(analysis) + "\n\n";
+    }
+
+    const userPrompt = brandKitSection + listingAnalysisSection + typeConfig.prompt(prompt);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({

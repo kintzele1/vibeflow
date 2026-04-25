@@ -3,11 +3,13 @@ import { useState, useRef, useEffect } from "react";
 import { BrandKitToggle } from "@/components/dashboard/BrandKitToggle";
 
 const ASO_TYPES = [
-  { id: "title_subtitle", label: "Title + Subtitle",       icon: "🏷️", desc: "App Store + Play title, subtitle, short copy" },
-  { id: "description",    label: "Long-form Description",  icon: "📄", desc: "Full store listing description, conversion-optimized" },
-  { id: "keywords",       label: "Keyword Strategy",       icon: "🔑", desc: "App Store + Play keyword plans, localization" },
-  { id: "screenshots",    label: "Screenshot Captions",    icon: "📸", desc: "7-screenshot narrative + captions + visual briefs" },
-  { id: "preview_video",  label: "App Preview Video",      icon: "🎬", desc: "30-second video script with second-by-second beats" },
+  { id: "title_subtitle",      label: "Title + Subtitle",                  icon: "🏷️", desc: "App Store + Play title, subtitle, short copy" },
+  { id: "description",         label: "Long-form Description",             icon: "📄", desc: "Full store listing description, conversion-optimized" },
+  { id: "keywords",            label: "Keyword Strategy",                  icon: "🔑", desc: "App Store + Play keyword plans, localization" },
+  { id: "screenshots",         label: "Screenshot Captions",               icon: "📸", desc: "7-screenshot narrative + captions + visual briefs" },
+  { id: "preview_video",       label: "App Preview Video",                 icon: "🎬", desc: "30-second video script with second-by-second beats" },
+  { id: "evaluate_app_store",  label: "Evaluate Your App Store Listing",   icon: "🍎", desc: "Audit your live App Store listing — needs App Store URL on Brand Kit" },
+  { id: "evaluate_play_store", label: "Evaluate Your Google Play Listing", icon: "▶️", desc: "Audit your live Play Store listing — needs Play Store URL on Brand Kit" },
 ];
 
 export default function AsoPage() {
@@ -57,7 +59,7 @@ export default function AsoPage() {
 
       if (response.status === 402) {
         const data = await response.json();
-        setError(data.message ?? "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($299 for 1,200 searches) or buy another Launch Kit ($49 for 100) to keep generating.");
+        setError(data.message ?? "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($99.99 for 1,200 searches) or buy another Launch Kit ($49.99 for 100) to keep generating.");
         setLoading(false);
         return;
       }

@@ -71,6 +71,8 @@ const TYPE_LABELS: Record<string, { label: string; icon: string; color: string }
   aso_keywords:          { label: "ASO Keywords",    icon: "🔑", color: "#FF9500" },
   aso_screenshots:       { label: "Screenshots",     icon: "📸", color: "#FF9500" },
   aso_preview_video:     { label: "Preview Video",   icon: "🎬", color: "#FF9500" },
+  aso_evaluate_app_store:  { label: "App Store Audit",  icon: "🍎", color: "#FF9500" },
+  aso_evaluate_play_store: { label: "Play Store Audit", icon: "▶️", color: "#FF9500" },
   community_product_hunt:        { label: "Product Hunt Kit", icon: "🚀", color: "#DA552F" },
   community_influencer_outreach: { label: "Influencer",       icon: "🎤", color: "#DA552F" },
   community_reddit_discord:      { label: "Reddit + Discord", icon: "👾", color: "#DA552F" },

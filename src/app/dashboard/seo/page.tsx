@@ -3,11 +3,16 @@ import { useState, useRef, useEffect } from "react";
 import { BrandKitToggle } from "@/components/dashboard/BrandKitToggle";
 
 const SEO_TYPES = [
-  { id: "keywords",  label: "Keyword Research",    icon: "🔑", desc: "Primary + semantic + AI-search terms" },
-  { id: "on_page",   label: "On-Page SEO",         icon: "📄", desc: "Title, meta, H-structure, links" },
-  { id: "technical", label: "Technical SEO",       icon: "⚙️", desc: "Schema, sitemap, robots, CWV" },
-  { id: "briefs",    label: "Content Brief",       icon: "📋", desc: "Full article brief for a writer" },
-  { id: "backlinks", label: "Backlink Outreach",   icon: "🔗", desc: "Targets + email templates + quick wins" },
+  { id: "keywords",            label: "Keyword Research",                   icon: "🔑", desc: "Primary + semantic + AI-search terms" },
+  { id: "on_page",             label: "On-Page SEO",                        icon: "📄", desc: "Title, meta, H-structure, links" },
+  { id: "technical",           label: "Technical SEO",                      icon: "⚙️", desc: "Schema, sitemap, robots, CWV" },
+  { id: "briefs",              label: "Content Brief",                      icon: "📋", desc: "Full article brief for a writer" },
+  { id: "backlinks",           label: "Backlink Outreach",                  icon: "🔗", desc: "Targets + email templates + quick wins" },
+  // Evaluate-website subtypes — fetch user's website_url from Brand Kit and
+  // produce SPECIFIC recommendations grounded in current state. Require
+  // website_url to be set; route returns a clear error if missing.
+  { id: "evaluate_on_page",    label: "Evaluate Your Website's On-Page SEO", icon: "🔎", desc: "Analyzes your live site + recommends specific rewrites" },
+  { id: "evaluate_technical",  label: "Evaluate Your Website's Technical SEO", icon: "🛠️", desc: "Audits canonical, schema, OG, robots from your live site" },
 ];
 
 export default function SeoPage() {

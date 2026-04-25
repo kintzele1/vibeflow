@@ -54,6 +54,8 @@ const TYPE_LABELS: Record<string, { label: string; icon: string; color: string }
   seo_technical:         { label: "Technical SEO",   icon: "⚙️", color: "#8B5CF6" },
   seo_briefs:            { label: "Content Brief",   icon: "📋", color: "#8B5CF6" },
   seo_backlinks:         { label: "Backlinks",       icon: "🔗", color: "#8B5CF6" },
+  seo_evaluate_on_page:  { label: "Site SEO Audit",  icon: "🔎", color: "#8B5CF6" },
+  seo_evaluate_technical:{ label: "Site Tech Audit", icon: "🛠️", color: "#8B5CF6" },
   ppc_google:            { label: "Google Ads",      icon: "🎯", color: "#4285F4" },
   ppc_meta:              { label: "Meta Ads",        icon: "📘", color: "#1877F2" },
   ppc_linkedin:          { label: "LinkedIn Ads",    icon: "in", color: "#0077B5" },

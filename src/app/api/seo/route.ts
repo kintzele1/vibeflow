@@ -114,6 +114,72 @@ CTA
 Exact CTA copy and the action the reader should take.`,
   },
 
+  evaluate_on_page: {
+    label: "Evaluate Your Website's On-Page SEO",
+    requiresWebsiteUrl: true,
+    prompt: (app: string) => `You are evaluating the user's CURRENT website on-page SEO. The website's live state has been fetched and is provided above (in the WEBSITE ON-PAGE SEO STATE section). Use that snapshot as ground truth.
+
+User's app context: ${app}
+
+Produce a SPECIFIC, evidence-based evaluation. Quote the current values from the snapshot when calling out issues — generic advice without referencing actual current state is unacceptable.
+
+Return seven sections, clearly labeled:
+
+WHAT'S WORKING
+3 specific things their current on-page SEO is doing right. For each, quote the exact current value from the snapshot.
+
+WHAT'S MISSING OR WEAK
+5 specific issues found in the snapshot. For each: quote the current value (or "MISSING"), explain why it's a problem.
+
+REWRITE — TITLE TAG
+Format: "Current: [exact current title from snapshot]" → "Recommended: [your rewrite, under 60 chars]" → "Why: [reasoning]". If MISSING, write the title from scratch.
+
+REWRITE — META DESCRIPTION
+Same format. 150-160 chars, includes keyword and clear CTA.
+
+REWRITE — H1
+Same format. Different from the title tag.
+
+H2 STRUCTURE FIX
+If their H2s are weak, generic, or missing, propose a 5-7 H2 structure tuned to their app's category. If H2s are strong, say so and explain why.
+
+PRIORITY FIXES
+3 highest-impact changes, ranked by effort/impact ratio. Each: what to do, why it matters, estimated effort (15 min / 1 hr / half day).`,
+  },
+
+  evaluate_technical: {
+    label: "Evaluate Your Website's Technical SEO",
+    requiresWebsiteUrl: true,
+    prompt: (app: string) => `You are evaluating the user's CURRENT website TECHNICAL SEO. The website's live state has been fetched and is provided above (in the WEBSITE ON-PAGE SEO STATE section — use the structured-data presence, canonical, OG, twitter:card signals as inputs).
+
+User's app context: ${app}
+
+Produce a SPECIFIC, evidence-based evaluation. Quote the current values from the snapshot when calling out issues. Note clearly when something can't be evaluated from a single page fetch (sitemap, robots.txt, Core Web Vitals require separate verification).
+
+Return seven sections, clearly labeled:
+
+WHAT'S WORKING
+2-3 things technical SEO is doing right. Reference specific evidence from the snapshot.
+
+WHAT'S MISSING OR BROKEN
+List specific gaps the snapshot reveals. For each: what's missing/wrong, why it matters for indexing or ranking.
+
+CANONICAL FIX
+Current: [exact current canonical from snapshot, or MISSING]. Recommended: [URL pattern]. Reasoning. Edge cases for pricing/feature pages and pagination.
+
+STRUCTURED DATA (JSON-LD)
+Currently present: [Yes/No from snapshot]. If MISSING: provide ready-to-paste JSON-LD for Organization + SoftwareApplication + BreadcrumbList using realistic placeholder URLs based on their domain.
+
+OPEN GRAPH + TWITTER CARDS
+Quote current og:title, og:description, twitter:card values from snapshot. Recommend specific rewrites. Explain how these affect link previews when shared.
+
+ROBOTS.TXT + SITEMAP.XML
+Note: these can't be checked from a single page fetch. Recommend the user verify both exist; provide a baseline robots.txt template + sitemap structure they should have.
+
+PRIORITY FIXES
+3 highest-impact technical changes, ranked by effort/impact ratio. Each: what to do, why it matters, estimated effort.`,
+  },
+
   backlinks: {
     label: "Backlink Outreach",
     prompt: (app: string) => `Generate a concrete backlink outreach plan for this app: ${app}
@@ -176,24 +242,40 @@ export async function POST(request: Request) {
     const typeConfig = SEO_TYPES[seoType as keyof typeof SEO_TYPES];
     if (!typeConfig) return new Response("Invalid SEO type", { status: 400 });
 
+    // Brand kit application is independent of subtype — applies if user toggled it.
     let brandKitSection = "";
     if (applyBrandKit) {
       const brand = await getBrandKit();
-      if (brand) {
-        brandKitSection = formatBrandKitForPrompt(brand) + "\n\n";
-        // If user has a website_url on file, fetch + parse current on-page state
-        // so the SEO agent can give SPECIFIC recommendations vs generic advice.
-        if (brand.website_url) {
-          const { analyzeWebsite, formatWebsiteAnalysisForPrompt } = await import("@/lib/url-analysis");
-          const analysis = await analyzeWebsite(brand.website_url);
-          if (analysis) {
-            brandKitSection += formatWebsiteAnalysisForPrompt(analysis) + "\n\n";
-          }
-        }
-      }
+      if (brand) brandKitSection = formatBrandKitForPrompt(brand) + "\n\n";
     }
 
-    const userPrompt = brandKitSection + typeConfig.prompt(prompt);
+    // Website URL analysis runs ONLY for the evaluate-* subtypes — those are
+    // explicitly opt-in evaluations of the user's existing site. For other
+    // SEO subtypes (keywords, on_page, technical, briefs, backlinks),
+    // generic advice is the right output.
+    let websiteAnalysisSection = "";
+    const isEvaluateType = seoType === "evaluate_on_page" || seoType === "evaluate_technical";
+    if (isEvaluateType) {
+      const brandForUrl = await getBrandKit();
+      const websiteUrl = brandForUrl?.website_url;
+      if (!websiteUrl) {
+        return new Response(JSON.stringify({
+          error: "missing_website_url",
+          message: "This evaluation needs your Website URL. Add it on the Brand Kit page, then come back.",
+        }), { status: 400, headers: { "Content-Type": "application/json" } });
+      }
+      const { analyzeWebsite, formatWebsiteAnalysisForPrompt } = await import("@/lib/url-analysis");
+      const analysis = await analyzeWebsite(websiteUrl);
+      if (!analysis) {
+        return new Response(JSON.stringify({
+          error: "website_unreachable",
+          message: `Couldn't fetch your website at ${websiteUrl}. Check the URL is live and accessible, then try again.`,
+        }), { status: 400, headers: { "Content-Type": "application/json" } });
+      }
+      websiteAnalysisSection = formatWebsiteAnalysisForPrompt(analysis) + "\n\n";
+    }
+
+    const userPrompt = brandKitSection + websiteAnalysisSection + typeConfig.prompt(prompt);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({

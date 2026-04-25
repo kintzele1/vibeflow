@@ -37,6 +37,8 @@ const CONTENT_TYPE_ROUTES: Record<string, string> = {
   seo_technical:         "/dashboard/seo",
   seo_briefs:            "/dashboard/seo",
   seo_backlinks:         "/dashboard/seo",
+  seo_evaluate_on_page:  "/dashboard/seo",
+  seo_evaluate_technical:"/dashboard/seo",
   ppc_google:            "/dashboard/ppc",
   ppc_meta:              "/dashboard/ppc",
   ppc_linkedin:          "/dashboard/ppc",
@@ -108,6 +110,8 @@ const TYPE_LABELS: Record<string, { label: string; icon: string }> = {
   seo_technical:         { label: "Technical SEO",      icon: "⚙️" },
   seo_briefs:            { label: "Content Brief",      icon: "📋" },
   seo_backlinks:         { label: "Backlink Outreach",  icon: "🔗" },
+  seo_evaluate_on_page:  { label: "Site On-Page Audit", icon: "🔎" },
+  seo_evaluate_technical:{ label: "Site Technical Audit", icon: "🛠️" },
   ppc_google:            { label: "Google Ads",         icon: "🎯" },
   ppc_meta:              { label: "Meta Ads",           icon: "📘" },
   ppc_linkedin:          { label: "LinkedIn Ads",       icon: "in" },
@@ -157,6 +161,38 @@ export default function CampaignsPage() {
   const [filter, setFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // Rating state for the selected campaign — chip lives next to View Analytics
+  const [userRating, setUserRating] = useState<"up" | "down" | null>(null);
+  const [ratingSaving, setRatingSaving] = useState(false);
+
+  useEffect(() => {
+    setUserRating(null);
+    if (!selected) return;
+    fetch(`/api/campaigns/${selected.id}/rate`)
+      .then(r => r.json())
+      .then(data => { if (data?.rating === "up" || data?.rating === "down") setUserRating(data.rating); })
+      .catch(() => { /* silent — no rating shown */ });
+  }, [selected?.id]);
+
+  async function submitRating(rating: "up" | "down") {
+    if (!selected) return;
+    const previous = userRating;
+    setUserRating(rating);
+    setRatingSaving(true);
+    try {
+      const res = await fetch(`/api/campaigns/${selected.id}/rate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating }),
+      });
+      if (!res.ok) setUserRating(previous);
+    } catch {
+      setUserRating(previous);
+    } finally {
+      setRatingSaving(false);
+    }
+  }
   const supabase = createClient();
 
   useEffect(() => { fetchCampaigns(); }, []);
@@ -556,13 +592,51 @@ export default function CampaignsPage() {
                     }}
                   >✨ Refresh brand</a>
                 )}
+                {/* Rating chip — most discoverable spot for friendlies to rate */}
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: "#F8F8F8", border: "1px solid #EEEEEE",
+                  borderRadius: 999, padding: "4px 6px 4px 12px",
+                  marginLeft: "auto",
+                }}>
+                  <span style={{
+                    fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#878787",
+                  }}>Useful?</span>
+                  <button
+                    onClick={() => submitRating("up")}
+                    disabled={ratingSaving}
+                    aria-label="Thumbs up"
+                    title="Yes, this was useful"
+                    style={{
+                      width: 28, height: 28, borderRadius: "50%",
+                      background: userRating === "up" ? "#E6FAF8" : "transparent",
+                      border: userRating === "up" ? "1.5px solid #05AD98" : "1.5px solid transparent",
+                      cursor: ratingSaving ? "wait" : "pointer", padding: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 14, lineHeight: 1, transition: "all 0.15s",
+                    }}
+                  >👍</button>
+                  <button
+                    onClick={() => submitRating("down")}
+                    disabled={ratingSaving}
+                    aria-label="Thumbs down"
+                    title="No, this missed the mark"
+                    style={{
+                      width: 28, height: 28, borderRadius: "50%",
+                      background: userRating === "down" ? "rgba(226,75,74,0.1)" : "transparent",
+                      border: userRating === "down" ? "1.5px solid #E24B4A" : "1.5px solid transparent",
+                      cursor: ratingSaving ? "wait" : "pointer", padding: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 14, lineHeight: 1, transition: "all 0.15s",
+                    }}
+                  >👎</button>
+                </div>
                 <a
                   href={`/dashboard/campaigns/${selected.id}/results`}
                   title="View analytics for this campaign. You'll set up a UTM campaign tracking ID here — add it to every shared link so we can pull real GA4 metrics back into this view."
                   style={{
                     fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
                     padding: "8px 16px", color: "#878787", textDecoration: "none",
-                    marginLeft: "auto",
                   }}
                 >
                   View analytics →

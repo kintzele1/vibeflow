@@ -280,7 +280,7 @@ export async function POST(request: Request) {
       if (!storeUrl) {
         return new Response(JSON.stringify({
           error: "missing_store_url",
-          message: `This evaluation needs your ${fieldName}. Add it on the Brand Kit page, then come back.`,
+          message: `We need your ${fieldName} to evaluate your listing. Please add it to your Brand Kit, then try again.`,
         }), { status: 400, headers: { "Content-Type": "application/json" } });
       }
       const { analyzeAppStore, formatAppStoreAnalysisForPrompt } = await import("@/lib/url-analysis");
@@ -288,7 +288,7 @@ export async function POST(request: Request) {
       if (!analysis) {
         return new Response(JSON.stringify({
           error: "store_unreachable",
-          message: `Couldn't fetch your ${storeName} listing at ${storeUrl}. Check the URL is live and accessible, then try again.`,
+          message: `We couldn't fetch your ${storeName} listing. Please check the URL is correctly added to your Brand Kit and that the listing is live.`,
         }), { status: 400, headers: { "Content-Type": "application/json" } });
       }
       listingAnalysisSection = formatAppStoreAnalysisForPrompt(analysis) + "\n\n";

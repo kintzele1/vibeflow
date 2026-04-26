@@ -62,13 +62,17 @@ export default function SeoPage() {
 
       if (response.status === 402) {
         const data = await response.json();
-        setError(data.message ?? "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($299 for 1,200 searches) or buy another Launch Kit ($49 for 100) to keep generating.");
+        setError(data.message ?? "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($99.99 for 1,200 searches) or buy another Launch Kit ($49.99 for 100) to keep generating.");
         setLoading(false);
         return;
       }
 
       if (!response.ok) {
-        setError("Something went wrong. Please try again.");
+        // Read the server's friendly message if it sent one (e.g. missing
+        // website URL, unreachable URL, SSRF block). Fall back to generic
+        // only if the body isn't structured.
+        const data = await response.json().catch(() => null);
+        setError(data?.message ?? "Something went wrong. Please try again.");
         setLoading(false);
         return;
       }

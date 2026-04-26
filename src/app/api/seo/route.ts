@@ -231,11 +231,11 @@ export async function POST(request: Request) {
         return new Response(JSON.stringify({
           error: "free_limit",
           agent: "seo",
-          message: "You've used your free SEO generation. Upgrade to the Launch Kit ($49) for 100 searches across every agent.",
+          message: "You've used your free SEO generation. Upgrade to the Launch Kit ($49.99) for 100 searches across every agent.",
         }), { status: 402, headers: { "Content-Type": "application/json" } });
       }
     } else if (usage.searches_remaining <= 0) {
-      return new Response(JSON.stringify({ error: "no_searches", message: "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($299 for 1,200 searches) or buy another Launch Kit ($49 for 100) to keep generating." }),
+      return new Response(JSON.stringify({ error: "no_searches", message: "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($99.99 for 1,200 searches) or buy another Launch Kit ($49.99 for 100) to keep generating." }),
         { status: 402, headers: { "Content-Type": "application/json" } });
     }
 
@@ -261,7 +261,7 @@ export async function POST(request: Request) {
       if (!websiteUrl) {
         return new Response(JSON.stringify({
           error: "missing_website_url",
-          message: "This evaluation needs your Website URL. Add it on the Brand Kit page, then come back.",
+          message: "We need your Website URL to evaluate it. Please add it to your Brand Kit, then try again.",
         }), { status: 400, headers: { "Content-Type": "application/json" } });
       }
       const { analyzeWebsite, formatWebsiteAnalysisForPrompt } = await import("@/lib/url-analysis");
@@ -269,7 +269,7 @@ export async function POST(request: Request) {
       if (!analysis) {
         return new Response(JSON.stringify({
           error: "website_unreachable",
-          message: `Couldn't fetch your website at ${websiteUrl}. Check the URL is live and accessible, then try again.`,
+          message: "We couldn't fetch your URL. Please check it's correctly added to your Brand Kit and that the site is live.",
         }), { status: 400, headers: { "Content-Type": "application/json" } });
       }
       websiteAnalysisSection = formatWebsiteAnalysisForPrompt(analysis) + "\n\n";

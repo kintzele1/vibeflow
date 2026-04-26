@@ -4,10 +4,12 @@ Posts live as `.mdx` files in this directory. Each file maps to a URL like `/blo
 
 ## Adding a new post
 
-1. Create a new file: `content/blog/your-slug-here.mdx`
+1. Create a new file: `content/blog/your-slug-here.mdx` (must be `.mdx`, not `.md`)
 2. Add YAML frontmatter at the top (see template below)
 3. Write the post body in markdown — you can use any Markdown syntax + JSX components
 4. Commit and push — Vercel rebuilds the site and the post is live
+
+> Only `.mdx` files become routable posts. Plain `.md` files (like this README) are ignored by the blog index and won't generate routes.
 
 ## Frontmatter template
 

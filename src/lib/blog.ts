@@ -29,12 +29,16 @@ export interface BlogPostMeta extends BlogPostFrontmatter {
 
 const BLOG_DIR = path.join(process.cwd(), "content", "blog");
 
+// Only .mdx files are treated as posts. Plain .md files (like README.md)
+// are ignored so they can sit alongside posts as docs without becoming
+// routable pages — and so the dynamic import in /blog/[slug]/page.tsx
+// (which is hardcoded to .mdx) never tries to resolve a non-existent file.
 function isMdx(file: string): boolean {
-  return file.endsWith(".mdx") || file.endsWith(".md");
+  return file.endsWith(".mdx");
 }
 
 function slugFromFilename(file: string): string {
-  return file.replace(/\.mdx?$/, "");
+  return file.replace(/\.mdx$/, "");
 }
 
 function estimateReadingTime(body: string): number {

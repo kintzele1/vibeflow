@@ -20,15 +20,32 @@ export default function DashboardPage() {
   const [hasBrandKit, setHasBrandKit] = useState(false);
   const [isRefresh, setIsRefresh] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showOnboardingTour, setShowOnboardingTour] = useState(false);
 
-  // Pre-fill from URL params (refresh flow from campaign library)
+  // Pre-fill from URL params (refresh flow from campaign library + onboarding guided tour)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const p = params.get("prompt");
     const r = params.get("refresh");
+    const onb = params.get("onboarding");
     if (p) setPrompt(p);
     if (r === "1") setIsRefresh(true);
+    if (onb === "1") {
+      // Only show if the user hasn't dismissed it before. localStorage flag
+      // prevents the banner from re-appearing on refresh or back-button navigation.
+      const dismissed = localStorage.getItem("vibeflow_onboarding_tour_dismissed") === "1";
+      if (!dismissed) setShowOnboardingTour(true);
+      // Clean the param from the URL so a refresh doesn't re-trigger.
+      const url = new URL(window.location.href);
+      url.searchParams.delete("onboarding");
+      window.history.replaceState({}, "", url.toString());
+    }
   }, []);
+
+  function dismissOnboardingTour() {
+    setShowOnboardingTour(false);
+    try { localStorage.setItem("vibeflow_onboarding_tour_dismissed", "1"); } catch {}
+  }
 
   // Show welcome banner for brand-new free users who haven't used any agent yet.
   useEffect(() => {
@@ -74,7 +91,7 @@ export default function DashboardPage() {
 
       if (response.status === 402) {
         const data = await response.json();
-        setError(data.message ?? "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($299 for 1,200 searches) or buy another Launch Kit ($49 for 100) to keep generating.");
+        setError(data.message ?? "You've used all your searches. Every generation counts as 1 search. Upgrade to Annual ($99.99 for 1,200 searches) or buy another Launch Kit ($49.99 for 100) to keep generating.");
         setLoading(false); return;
       }
       if (!response.ok) { setError("Something went wrong."); setLoading(false); return; }
@@ -115,7 +132,55 @@ export default function DashboardPage() {
     <div style={{ padding: "40px 48px", maxWidth: 900, margin: "0 auto" }}>
       <SuccessBanner />
 
-      {showWelcome && (
+      {/* Guided-tour banner — fires only when arriving from the welcome modal's
+          step 3 (?onboarding=1). Renders ABOVE the free-tier banner and
+          suppresses it (return null in the conditional below) to avoid a
+          stack of two intro messages on first visit. localStorage flag
+          prevents re-display on refresh/back-button. */}
+      {showOnboardingTour && (
+        <div style={{
+          background: "linear-gradient(135deg, #05AD98 0%, #03907F 100%)",
+          borderRadius: 16, padding: "20px 24px", marginBottom: 20,
+          display: "flex", alignItems: "flex-start", gap: 14,
+          position: "relative",
+          color: "#FFFFFF",
+          boxShadow: "0 6px 24px rgba(5,173,152,0.25)",
+        }}>
+          <div style={{ fontSize: 28, flexShrink: 0 }}>👋</div>
+          <div style={{ flex: 1 }}>
+            <div style={{
+              fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: 17,
+              color: "#FFFFFF", marginBottom: 6,
+            }}>
+              Type a prompt below — VibeFlow does the rest.
+            </div>
+            <div style={{
+              fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "rgba(255,255,255,0.9)",
+              lineHeight: 1.6, marginBottom: 6,
+            }}>
+              Describe your app once and you'll get a full launch campaign across content, social, SEO, ads, email, and ASO. Brand Kit is on, so everything comes out in your voice and color.
+            </div>
+            <div style={{
+              fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "rgba(255,255,255,0.65)",
+            }}>
+              ↓ Try a prompt like the placeholder below to see what a full campaign looks like.
+            </div>
+          </div>
+          <button
+            onClick={dismissOnboardingTour}
+            aria-label="Dismiss onboarding tour"
+            style={{
+              background: "rgba(255,255,255,0.15)", border: "none", cursor: "pointer",
+              color: "#FFFFFF", fontSize: 18, lineHeight: 1,
+              width: 28, height: 28, borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >×</button>
+        </div>
+      )}
+
+      {showWelcome && !showOnboardingTour && (
         <div style={{
           background: "linear-gradient(135deg, #E6FAF8 0%, #F0F5FF 100%)",
           border: "1px solid rgba(5,173,152,0.2)",

@@ -158,8 +158,15 @@ export function Pricing() {
               padding: "14px 28px", borderRadius: 999, border: "none",
               cursor: loadingPlan ? "not-allowed" : "pointer",
             }}>
-              {loadingPlan === "launch" ? "Redirecting..." : `Get Launch Kit — ${PLANS.launch.priceDisplay}`}
+              {loadingPlan === "launch" ? "Opening secure Stripe checkout…" : `Get Launch Kit — ${PLANS.launch.priceDisplay}`}
             </button>
+            <p style={{
+              fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#878787",
+              textAlign: "center", marginTop: 12, lineHeight: 1.5,
+            }}>
+              Secure checkout via Stripe. Takes 30 seconds.<br />
+              Your searches activate the moment payment clears.
+            </p>
           </div>
 
           {/* Annual */}
@@ -203,8 +210,15 @@ export function Pricing() {
               padding: "14px 28px", borderRadius: 999, border: "none",
               cursor: loadingPlan ? "not-allowed" : "pointer",
             }}>
-              {loadingPlan === "annual" ? "Redirecting..." : `Get Annual Plan — ${PLANS.annual.priceDisplay}`}
+              {loadingPlan === "annual" ? "Opening secure Stripe checkout…" : `Get Annual Plan — ${PLANS.annual.priceDisplay}`}
             </button>
+            <p style={{
+              fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#878787",
+              textAlign: "center", marginTop: 12, lineHeight: 1.5,
+            }}>
+              Secure checkout via Stripe. Takes 30 seconds.<br />
+              Your 1,200 searches activate the moment payment clears.
+            </p>
           </div>
         </div>
 

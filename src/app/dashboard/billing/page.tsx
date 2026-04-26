@@ -155,18 +155,30 @@ export default function BillingPage() {
                 fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
                 padding: "10px 24px", borderRadius: 999, border: "none", cursor: "pointer",
               }}>
-                {loadingPlan === "launch" ? "Redirecting..." : "Get Launch Kit — $49.99"}
+                {loadingPlan === "launch" ? "Opening Stripe…" : "Get Launch Kit — $49.99"}
               </button>
               <button onClick={() => handleCheckout("annual")} disabled={!!loadingPlan} style={{
                 background: "#05AD98", color: "#FFFFFF",
                 fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 14,
                 padding: "10px 24px", borderRadius: 999, border: "none", cursor: "pointer",
               }}>
-                {loadingPlan === "annual" ? "Redirecting..." : "Get Annual Plan — $99.99"}
+                {loadingPlan === "annual" ? "Opening Stripe…" : "Get Annual Plan — $99.99"}
               </button>
             </>
           )}
         </div>
+
+        {/* Payment-flow guidance microcopy — sets expectations for the brief
+            click → Stripe redirect → /success roundtrip so users don't refresh
+            mid-flight or wonder why they got bounced to a Stripe page. */}
+        {!hasActivePlan && (
+          <p style={{
+            fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#878787",
+            marginTop: 14, lineHeight: 1.55,
+          }}>
+            Secure checkout via Stripe. Takes about 30 seconds — you'll come right back here when it clears, with searches activated immediately.
+          </p>
+        )}
       </div>
 
       {/* Limit reached / upgrade nudge */}

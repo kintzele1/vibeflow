@@ -22,6 +22,7 @@ export default function IntegrationsPage() {
   const [propertiesLoading, setPropertiesLoading] = useState(false);
   const [savingProperty, setSavingProperty] = useState<string | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -99,6 +100,20 @@ export default function IntegrationsPage() {
     }
   }
 
+  // Auto-disconnect + redirect to reauthorize. Used by the "Try again" primary
+  // action on the error banner so the user doesn't have to click two buttons
+  // when their connection is in a bad state.
+  async function retryConnection() {
+    setRetrying(true);
+    try {
+      // Best-effort disconnect — don't block reauthorize if there's nothing to clear.
+      await fetch("/api/integrations/ga4/disconnect", { method: "POST" }).catch(() => {});
+      window.location.href = "/api/integrations/ga4/authorize";
+    } catch {
+      setRetrying(false);
+    }
+  }
+
   const friendlyError = (code: string): string => {
     const map: Record<string, string> = {
       state_mismatch: "Security check failed. Please try connecting again — don't share the auth link.",
@@ -126,12 +141,31 @@ export default function IntegrationsPage() {
       {urlError && (
         <div style={{
           background: "#FEF2F2", border: "1px solid rgba(226,75,74,0.2)",
-          borderRadius: 12, padding: "12px 16px", marginBottom: 20,
+          borderRadius: 12, padding: "14px 16px", marginBottom: 20,
           fontFamily: "var(--font-dm-sans)", fontSize: 14, color: "#E24B4A",
           display: "flex", alignItems: "center", justifyContent: "space-between",
+          gap: 12, flexWrap: "wrap",
         }}>
-          <span>{friendlyError(urlError)}</span>
-          <button onClick={() => setUrlError("")} style={{ background: "none", border: "none", cursor: "pointer", color: "#E24B4A", fontSize: 18 }}>×</button>
+          <span style={{ flex: 1, minWidth: 200 }}>{friendlyError(urlError)}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              onClick={retryConnection}
+              disabled={retrying}
+              style={{
+                background: "#E24B4A", color: "#FFFFFF",
+                fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+                padding: "7px 16px", borderRadius: 999, border: "none",
+                cursor: retrying ? "not-allowed" : "pointer",
+              }}
+            >
+              {retrying ? "Resetting…" : "Try again"}
+            </button>
+            <button
+              onClick={() => setUrlError("")}
+              aria-label="Dismiss"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#E24B4A", fontSize: 18 }}
+            >×</button>
+          </div>
         </div>
       )}
 
@@ -171,20 +205,31 @@ export default function IntegrationsPage() {
               )}
 
               {ga4.status === "connected" && (
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                  <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#1F1F1F" }}>
-                    Property: <strong>{ga4.accountName}</strong>
-                  </div>
-                  <button onClick={disconnect} disabled={disconnecting} style={{
-                    background: "transparent", color: "#E24B4A",
-                    fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 12,
-                    padding: "5px 12px", borderRadius: 999,
-                    border: "1px solid rgba(226,75,74,0.2)", cursor: disconnecting ? "not-allowed" : "pointer",
-                  }}>{disconnecting ? "Disconnecting…" : "Disconnect"}</button>
+                <div style={{ fontFamily: "var(--font-dm-sans)", fontSize: 13, color: "#1F1F1F" }}>
+                  Property: <strong>{ga4.accountName}</strong>
                 </div>
               )}
             </div>
           </div>
+
+          {ga4.status === "connected" && (
+            <div style={{
+              borderTop: "1px solid #EEEEEE", marginTop: 16, paddingTop: 14,
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              flexWrap: "wrap", gap: 8,
+            }}>
+              <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: 12, color: "#AAAAAA" }}>
+                Need to switch property or reauthorize?
+              </span>
+              <button onClick={disconnect} disabled={disconnecting} style={{
+                background: "#FEF2F2", color: "#E24B4A",
+                fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+                padding: "8px 16px", borderRadius: 999,
+                border: "1px solid rgba(226,75,74,0.3)",
+                cursor: disconnecting ? "not-allowed" : "pointer",
+              }}>{disconnecting ? "Disconnecting…" : "Disconnect / Reconnect"}</button>
+            </div>
+          )}
 
           {ga4.status === "needs_property" && (
             <div style={{ borderTop: "1px solid #EEEEEE", paddingTop: 20 }}>
@@ -193,10 +238,11 @@ export default function IntegrationsPage() {
                   Pick the property to connect
                 </div>
                 <button onClick={disconnect} disabled={disconnecting} style={{
-                  background: "transparent", color: "#E24B4A",
-                  fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 12,
-                  padding: "5px 12px", borderRadius: 999,
-                  border: "1px solid rgba(226,75,74,0.2)", cursor: disconnecting ? "not-allowed" : "pointer",
+                  background: "#FEF2F2", color: "#E24B4A",
+                  fontFamily: "var(--font-dm-sans)", fontWeight: 500, fontSize: 13,
+                  padding: "8px 16px", borderRadius: 999,
+                  border: "1px solid rgba(226,75,74,0.3)",
+                  cursor: disconnecting ? "not-allowed" : "pointer",
                 }}>{disconnecting ? "Resetting…" : "Reset / Reconnect"}</button>
               </div>
               {propertiesLoading ? (

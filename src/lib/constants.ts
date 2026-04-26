@@ -49,9 +49,10 @@ export const PLANS = {
 
 // ── Navigation ───────────────────────────────────────────
 export const NAV_LINKS = [
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Features",     href: "#features" },
-  { label: "Pricing",      href: "#pricing" },
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Features",     href: "/#features" },
+  { label: "Pricing",      href: "/#pricing" },
+  { label: "Blog",         href: "/blog" },
 ] as const;
 
 export const DASHBOARD_TABS = [

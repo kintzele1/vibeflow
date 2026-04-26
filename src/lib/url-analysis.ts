@@ -12,22 +12,122 @@
  *     falls back to generic advice gracefully
  *   - Limit response size to avoid eating Anthropic context window
  *   - Use regex parsing instead of cheerio to keep deps minimal
+ *
+ * SECURITY: fetchHtml validates target URLs against SSRF — only http/https
+ * to public IPs are allowed. Private/loopback/link-local/cloud-metadata
+ * ranges are blocked. Redirects are followed manually with re-validation
+ * at each hop so an attacker can't redirect us into the internal network.
  */
+
+import { lookup as dnsLookup } from "node:dns/promises";
+import net from "node:net";
 
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_HTML_BYTES = 500_000;
+const MAX_REDIRECTS = 5;
 const USER_AGENT = "VibeFlow-Marketing-Bot/1.0 (+https://www.vibeflow.marketing)";
 
-async function fetchHtml(url: string): Promise<string | null> {
+// IPv4 ranges we refuse to fetch — loopback, private, link-local (incl. AWS
+// metadata 169.254.169.254), shared address space, doc/test ranges, multicast,
+// reserved, broadcast.
+const PRIVATE_V4_RANGES: RegExp[] = [
+  /^127\./,                                    // loopback
+  /^10\./,                                     // private
+  /^172\.(1[6-9]|2\d|3[01])\./,                // private
+  /^192\.168\./,                               // private
+  /^169\.254\./,                               // link-local + AWS/Azure/GCP metadata
+  /^0\./,                                      // current network / unspecified
+  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./,  // shared address space
+  /^198\.1[89]\./,                             // benchmarking
+  /^192\.0\.(0|2)\./,                          // protocol assignments / TEST-NET-1
+  /^198\.51\.100\./,                           // TEST-NET-2
+  /^203\.0\.113\./,                            // TEST-NET-3
+  /^22[4-9]\./,                                // multicast (224-229)
+  /^23\d\./,                                   // multicast (230-239)
+  /^2[4-5]\d\./,                               // reserved (240-255)
+  /^255\.255\.255\.255$/,                      // broadcast
+];
+
+function isPrivateV4(ip: string): boolean {
+  return PRIVATE_V4_RANGES.some(re => re.test(ip));
+}
+
+function isPrivateV6(ip: string): boolean {
+  const lower = ip.toLowerCase();
+  if (lower === "::1" || lower === "::") return true;
+  // fc00::/7 (unique local)
+  if (lower.startsWith("fc") || lower.startsWith("fd")) return true;
+  // fe80::/10 (link-local) — prefix bytes 1111 1110 10xx, matches fe8x/fe9x/feax/febx
+  if (/^fe[89ab]/.test(lower)) return true;
+  // IPv4-mapped IPv6 — extract embedded IPv4 and re-check
+  const v4Mapped = lower.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (v4Mapped) return isPrivateV4(v4Mapped[1]);
+  return false;
+}
+
+/**
+ * Validates a URL is safe to fetch. Returns true ONLY if:
+ *   - protocol is http or https
+ *   - hostname is not localhost / .local / .internal
+ *   - hostname resolves to public IP(s) only
+ *
+ * Note on TOCTOU: between this check and the actual fetch, DNS could rebind
+ * to a private IP. Mitigations like resolving once and pinning IP are
+ * possible but require more code; for v1 friendlies, this catches all
+ * realistic SSRF attempts.
+ */
+async function isSafeUrl(rawUrl: string): Promise<boolean> {
+  let u: URL;
+  try { u = new URL(rawUrl); } catch { return false; }
+
+  if (!["http:", "https:"].includes(u.protocol)) return false;
+
+  const host = u.hostname.toLowerCase();
+  if (host === "localhost") return false;
+  if (host.endsWith(".local") || host.endsWith(".internal") || host.endsWith(".localhost")) return false;
+
+  // If the hostname is already a literal IP, validate it directly without DNS.
+  if (net.isIP(host)) {
+    return net.isIPv4(host) ? !isPrivateV4(host) : !isPrivateV6(host);
+  }
+
+  // Otherwise resolve DNS — refuse if ANY resolved address is private (an
+  // attacker can't slip a private IP in via a DNS record set with mixed results).
+  try {
+    const addresses = await dnsLookup(host, { all: true });
+    if (addresses.length === 0) return false;
+    return addresses.every(({ address }) =>
+      net.isIPv4(address) ? !isPrivateV4(address) : !isPrivateV6(address)
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function fetchHtml(url: string, depth = 0): Promise<string | null> {
+  if (depth > MAX_REDIRECTS) return null;
+  if (!(await isSafeUrl(url))) return null;
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     const res = await fetch(url, {
       signal: controller.signal,
       headers: { "User-Agent": USER_AGENT, "Accept": "text/html,*/*" },
-      redirect: "follow",
+      redirect: "manual",  // Re-validate every hop; auto-follow would skip SSRF check on redirect targets.
     });
     clearTimeout(timeoutId);
+
+    // Manual redirect handling — re-run the safety check on the Location URL
+    // before following. Resolve relative redirects against the current URL.
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      if (!location) return null;
+      let nextUrl: string;
+      try { nextUrl = new URL(location, url).toString(); } catch { return null; }
+      return fetchHtml(nextUrl, depth + 1);
+    }
+
     if (!res.ok) return null;
     const buffer = await res.arrayBuffer();
     if (buffer.byteLength > MAX_HTML_BYTES) {
